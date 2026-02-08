@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PokéMeme - Coming Soon - PKMONAD</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.png" alt="PKMONAD Logo">
+                <span>PKMONAD</span>
+            </a>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active">
+                        Pokédex <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="pokedex.html" class="dropdown-item">Pokédex</a>
+                        <a href="tcg-search.html" class="dropdown-item">Poké TCG</a>
+                        <a href="pokememe.html" class="dropdown-item">PokéMeme</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="train.html" class="nav-link">Train</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        $PKMON <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777" target="_blank"
+                            class="dropdown-item">How to buy</a>
+                        <a href="utility.html" class="dropdown-item">Utility</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Poké Center <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="https://x.com/pkmonad" target="_blank" class="dropdown-item">X (Twitter)</a>
+                        <a href="https://t.me/pkmonad" target="_blank" class="dropdown-item">Telegram</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="agent-dashboard.html" class="nav-link btn-start">START</a>
+                </li>
+                <li class="nav-item">
+                    <button class="btn-wallet" id="connectWalletBtn">
+                        <i class="fas fa-wallet"></i> Connect Wallet
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Coming Soon Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="coming-soon-content">
+                <!-- Cute Pokemon Characters -->
+                <div class="pokemon-bounce pokemon-b1 animate-float" style="animation-delay: 0s;">
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/39.png"
+                        alt="Jigglypuff">
+                </div>
+                <div class="pokemon-bounce pokemon-b2 animate-float" style="animation-delay: 0.7s;">
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png"
+                        alt="Eevee">
+                </div>
+                <div class="pokemon-bounce pokemon-b3 animate-float" style="animation-delay: 1.4s;">
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/52.png"
+                        alt="Meowth">
+                </div>
+
+                <!-- Main Purple Ball with Pokemon -->
+                <div class="center-pokemon">
+                    <div class="purple-circle animate-glow">
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/143.png"
+                            alt="Snorlax">
+                    </div>
+                </div>
+
+                <div class="coming-soon-text fade-in">
+                    <h1 class="coming-soon-title">COMING SOON</h1>
+
+                    <p class="coming-soon-subtitle">
+                        Something amazing is on the way. Get ready for the ultimate Pokémon meme experience!
+                    </p>
+
+                    <div class="coming-soon-features">
+                        <div class="feature-item">
+                            <i class="fas fa-images"></i>
+                            <span>Epic Memes</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-trophy"></i>
+                            <span>Contests</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-users"></i>
+                            <span>Community</span>
+                        </div>
+                    </div>
+
+                    <p class="coming-soon-hint">
+                        Stay tuned for updates!<br>
+                        <span style="color: var(--light-purple);">Follow us on social media for the latest news</span>
+                    </p>
+
+                    <div class="social-links">
+                        <a href="https://x.com/pkmonad" target="_blank" class="social-btn">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="https://t.me/pkmonad" target="_blank" class="social-btn">
+                            <i class="fab fa-telegram"></i>
+                        </a>
+                    </div>
+
+                    <a href="index.html" class="btn-secondary" style="margin-top: 2rem; display: inline-block;">
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <style>
+        .coming-soon-content {
+            position: relative;
+            text-align: center;
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pokemon-bounce {
+            position: absolute;
+            pointer-events: none;
+        }
+
+        .pokemon-bounce img {
+            width: 100px;
+            height: 100px;
+            filter: drop-shadow(0 10px 30px rgba(124, 58, 237, 0.4));
+        }
+
+        .pokemon-b1 {
+            top: 10%;
+            left: 15%;
+        }
+
+        .pokemon-b2 {
+            top: 15%;
+            right: 10%;
+        }
+
+        .pokemon-b3 {
+            bottom: 20%;
+            left: 20%;
+        }
+
+        .center-pokemon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 0;
+        }
+
+        .purple-circle {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+        }
+
+        .purple-circle img {
+            width: 200px;
+            height: 200px;
+        }
+
+        .coming-soon-text {
+            position: relative;
+            z-index: 2;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .coming-soon-title {
+            font-size: 4.5rem;
+            font-weight: 900;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #FFFFFF, var(--light-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 5px;
+        }
+
+        .coming-soon-subtitle {
+            font-size: 1.4rem;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+            line-height: 1.8;
+        }
+
+        .coming-soon-features {
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .feature-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .feature-item i {
+            font-size: 2.5rem;
+            color: var(--secondary-purple);
+        }
+
+        .feature-item span {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .coming-soon-hint {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+        }
+
+        .social-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-btn:hover {
+            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+            border-color: var(--primary-purple);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-purple);
+        }
+
+        @media (max-width: 768px) {
+            .coming-soon-title {
+                font-size: 2.5rem;
+            }
+
+            .coming-soon-subtitle {
+                font-size: 1.1rem;
+            }
+
+            .purple-circle {
+                width: 200px;
+                height: 200px;
+            }
+
+            .purple-circle img {
+                width: 140px;
+                height: 140px;
+            }
+
+            .coming-soon-features {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+        }
+    </style>
+
+    <script src="assets/wallet.js"></script>
+</body>
+
+</html>

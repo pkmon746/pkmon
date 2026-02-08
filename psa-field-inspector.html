@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSA API Field Inspector</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a2e;
+            color: #fff;
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #A855F7;
+        }
+
+        .input-section {
+            background: rgba(124, 58, 237, 0.1);
+            border: 2px solid #7C3AED;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            width: 300px;
+            background: #2a2a4e;
+            border: 1px solid #7C3AED;
+            color: white;
+            border-radius: 4px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #7C3AED, #A855F7);
+            border: none;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .response {
+            background: #2a2a4e;
+            border: 1px solid #7C3AED;
+            border-radius: 8px;
+            padding: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .field {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid #A855F7;
+        }
+
+        .field-name {
+            color: #F59E0B;
+            font-weight: bold;
+        }
+
+        .field-value {
+            color: #10B981;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 PSA API Field Inspector</h1>
+
+    <div class="input-section">
+        <input type="text" id="certInput" placeholder="Enter CERT number" value="82823256">
+        <button onclick="testAPI()">Test API</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const certNumber = document.getElementById('certInput').value;
+            const resultDiv = document.getElementById('result');
+
+            resultDiv.innerHTML = '<div class="response">Loading...</div>';
+
+            try {
+                const response = await fetch(`http://localhost:3000/api/psa/cert/${certNumber}`);
+                const data = await response.json();
+
+                let html = '<div class="response">';
+                html += '<h3>Full Response:</h3>';
+                html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                html += '</div>';
+
+                if (data.PSACert) {
+                    html += '<div class="response" style="margin-top: 20px;">';
+                    html += '<h3>PSACert Object Fields:</h3>';
+
+                    for (const [key, value] of Object.entries(data.PSACert)) {
+                        html += `<div class="field">`;
+                        html += `<span class="field-name">${key}:</span> `;
+                        html += `<span class="field-value">${JSON.stringify(value)}</span>`;
+                        html += `</div>`;
+                    }
+                    html += '</div>';
+
+                    html += '<div class="response" style="margin-top: 20px;">';
+                    html += '<h3>Recommended Mapping:</h3>';
+                    html += `<div class="field">Card Name: ${data.PSACert.Subject || data.PSACert.CardName || 'Not found'}</div>`;
+                    html += `<div class="field">Grade: ${data.PSACert.OverallGrade || data.PSACert.Grade || 'Not found'}</div>`;
+                    html += `<div class="field">Year: ${data.PSACert.Year || 'Not found'}</div>`;
+                    html += `<div class="field">Population: ${data.PSACert.TotalPopulation || 'Not found'}</div>`;
+                    html += '</div>';
+                }
+
+                resultDiv.innerHTML = html;
+
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="response" style="color: #EF4444;">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Auto-test on load
+        window.addEventListener('load', () => {
+            setTimeout(testAPI, 500);
+        });
+    </script>
+</body>
+
+</html>

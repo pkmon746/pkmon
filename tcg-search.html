@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokémon TCG Search - PKMONAD</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.png" alt="PKMONAD Logo">
+                <span>PKMONAD</span>
+            </a>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active">
+                        Pokédex <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="pokedex.html" class="dropdown-item">Pokédex</a>
+                        <a href="tcg-search.html" class="dropdown-item">Poké TCG</a>
+                        <a href="pokememe.html" class="dropdown-item">PokéMeme</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="train.html" class="nav-link">Train</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        $PKMON <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777" target="_blank"
+                            class="dropdown-item">How to buy</a>
+                        <a href="utility.html" class="dropdown-item">Utility</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Poké Center <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="https://x.com/pkmonad" target="_blank" class="dropdown-item">X (Twitter)</a>
+                        <a href="https://t.me/pkmonad" target="_blank" class="dropdown-item">Telegram</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="agent-dashboard.html" class="nav-link btn-start">START</a>
+                </li>
+                <li class="nav-item">
+                    <button class="btn-wallet" id="connectWalletBtn">
+                        <i class="fas fa-wallet"></i> Connect Wallet
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- TCG Search Section -->
+    <section class="section" style="padding-top: calc(var(--nav-height) + 3rem);">
+        <div class="container">
+            <div class="page-header fade-in">
+                <h1>Pokemon TCG Card Search</h1>
+                <p>Search and discover Pokémon Trading Card Game cards</p>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="search-container fade-in">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="tcgSearch" placeholder="Enter English Pokémon name (e.g., pikachu)">
+                    <button class="btn-search" onclick="searchTCG()">Search</button>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loadingIndicator" style="display: none; text-align: center; margin: 3rem 0;">
+                <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--primary-purple);"></i>
+                <p style="color: var(--text-secondary); margin-top: 1rem;">Searching cards...</p>
+            </div>
+
+            <!-- TCG Results -->
+            <div id="tcgResults" class="tcg-grid"></div>
+        </div>
+    </section>
+
+    <style>
+        .page-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .page-header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #FFFFFF, var(--secondary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .search-container {
+            max-width: 700px;
+            margin: 0 auto 4rem;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 0.5rem 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+        }
+
+        .search-box i {
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 0.75rem 0;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+
+        .btn-search {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+            color: white;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .tcg-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .tcg-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .tcg-card:hover {
+            border-color: var(--primary-purple);
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-purple);
+        }
+
+        .tcg-card-image {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: contain;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+        }
+
+        .tcg-card-info h3 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .tcg-card-details {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .tcg-card-price {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .price-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+        }
+
+        .price-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+    </style>
+
+    <script src="assets/wallet.js"></script>
+    <script>
+        const TCG_API = 'https://api.pokemontcg.io/v2';
+
+        async function searchTCG() {
+            const input = document.getElementById('tcgSearch').value.toLowerCase().trim();
+
+            if (!input) {
+                alert('Please enter a Pokémon name');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('tcgResults');
+            const loadingDiv = document.getElementById('loadingIndicator');
+
+            resultsDiv.innerHTML = '';
+            loadingDiv.style.display = 'block';
+
+            try {
+                const response = await fetch(`${TCG_API}/cards?q=name:${input}*&pageSize=20`);
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch cards');
+                }
+
+                const data = await response.json();
+                loadingDiv.style.display = 'none';
+
+                if (data.data.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                            <h2 style="color: var(--text-secondary);">No cards found</h2>
+                            <p style="color: var(--text-muted);">Try a different Pokémon name</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                displayTCGCards(data.data);
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                resultsDiv.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
+                        <h2 style="color: #EF4444;">Error loading cards</h2>
+                        <p style="color: var(--text-muted);">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayTCGCards(cards) {
+            const resultsDiv = document.getElementById('tcgResults');
+
+            cards.forEach(card => {
+                const cardDiv = document.createElement('div');
+                cardDiv.className = 'tcg-card fade-in';
+
+                const price = card.cardmarket?.prices?.averageSellPrice ||
+                    card.tcgplayer?.prices?.holofoil?.market ||
+                    card.tcgplayer?.prices?.normal?.market ||
+                    'N/A';
+
+                cardDiv.innerHTML = `
+                    <img src="${card.images.small}" alt="${card.name}" class="tcg-card-image">
+                    <div class="tcg-card-info">
+                        <h3>${card.name}</h3>
+                        <div class="tcg-card-details">
+                            <div><strong>Set:</strong> ${card.set.name}</div>
+                            <div><strong>Number:</strong> ${card.number}/${card.set.printedTotal}</div>
+                            <div><strong>Rarity:</strong> ${card.rarity || 'Unknown'}</div>
+                        </div>
+                        ${price !== 'N/A' ? `
+                            <div class="tcg-card-price">
+                                <span class="price-label">Market Price</span>
+                                <span class="price-value">$${typeof price === 'number' ? price.toFixed(2) : price}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                cardDiv.onclick = () => window.open(card.tcgplayer?.url || '#', '_blank');
+
+                resultsDiv.appendChild(cardDiv);
+            });
+        }
+
+        // Enter key support
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('tcgSearch').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchTCG();
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

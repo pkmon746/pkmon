@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PSA API Test - PKMONAD</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a2e;
+            color: white;
+        }
+
+        .test-container {
+            background: rgba(124, 58, 237, 0.1);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 10px;
+            width: 300px;
+            border-radius: 8px;
+            border: 1px solid #7C3AED;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #7C3AED, #A855F7);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .error {
+            color: #EF4444;
+        }
+
+        .success {
+            color: #10B981;
+        }
+
+        h1 {
+            color: #A855F7;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🔍 PSA API Connection Test</h1>
+
+    <div class="test-container">
+        <h3>Test 1: PSA API Direct Call</h3>
+        <p>Enter a PSA CERT number to test the API:</p>
+        <input type="text" id="certInput" placeholder="Enter CERT number (e.g., 12345678)">
+        <button onclick="testPSAAPI()">Test API</button>
+        <div id="result1" class="result"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>Test 2: Check CORS</h3>
+        <p>Check if CORS is blocking the request:</p>
+        <button onclick="checkCORS()">Check CORS</button>
+        <div id="result2" class="result"></div>
+    </div>
+
+    <div class="test-container">
+        <h3>Test 3: Token Validation</h3>
+        <p>Verify the PSA access token:</p>
+        <button onclick="checkToken()">Validate Token</button>
+        <div id="result3" class="result"></div>
+    </div>
+
+    <script>
+        const PSA_TOKEN = 'C2MNdaW2IO9Xlbm1MXC0Q_ARCaVfQbkldZRsMYd6oWP8ZACXog6jzv6X7QrgyWwYRgNmU3fn5tKp99zf8lRHiugZiEsjnOl4t_EpApf7JixN7HXvzwkGUZ8jxfpYNqszBBUZsOHS0mRatl3h-KxNvyd0qHV-QuDyryiiEFMq50tdWIiqrLEdil0xGi478LrtrLfnB9kP10jBpk6_dWV_UjI6jRF9_gRwQy3meG9Bitgvpghg-1DImavKxNW_i6ojZYrCIY5DK3w3uMkniqr8DNunZxZu-2c25o7dymeXq8DqU_Wh';
+        const PSA_API_URL = 'https://api.psacard.com/publicapi';
+
+        async function testPSAAPI() {
+            const certNumber = document.getElementById('certInput').value.trim();
+            const resultDiv = document.getElementById('result1');
+
+            if (!certNumber) {
+                resultDiv.innerHTML = '<span class="error">Please enter a CERT number</span>';
+                return;
+            }
+
+            resultDiv.innerHTML = 'Testing PSA API...';
+
+            try {
+                const url = `${PSA_API_URL}/cert/GetByCertNumber/${certNumber}`;
+                console.log('Testing URL:', url);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${PSA_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', [...response.headers.entries()]);
+
+                const responseText = await response.text();
+                console.log('Response text:', responseText);
+
+                if (response.ok) {
+                    const data = JSON.parse(responseText);
+                    resultDiv.innerHTML = `<span class="success">✅ SUCCESS!</span>\n\nStatus: ${response.status}\n\nData:\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ FAILED</span>\n\nStatus: ${response.status}\nError:\n${responseText}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<span class="error">❌ ERROR</span>\n\n${error.message}\n\nDetails:\n${error.stack || 'No stack trace'}`;
+                console.error('Full error:', error);
+            }
+        }
+
+        async function checkCORS() {
+            const resultDiv = document.getElementById('result2');
+            resultDiv.innerHTML = 'Checking CORS...';
+
+            try {
+                const response = await fetch(`${PSA_API_URL}/cert/GetByCertNumber/00000000`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${PSA_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                resultDiv.innerHTML = `<span class="success">✅ CORS is OK</span>\n\nThe browser can connect to PSA API.\nStatus: ${response.status}`;
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    resultDiv.innerHTML = `<span class="error">❌ CORS BLOCKED</span>\n\nThe browser is blocking requests to PSA API.\n\nPossible solutions:\n1. Use a CORS proxy\n2. Implement server-side API calls\n3. Contact PSA to enable CORS for your domain\n\nError: ${error.message}`;
+                } else {
+                    resultDiv.innerHTML = `<span class="error">❌ ERROR</span>\n\n${error.message}`;
+                }
+                console.error('CORS check error:', error);
+            }
+        }
+
+        function checkToken() {
+            const resultDiv = document.getElementById('result3');
+
+            if (!PSA_TOKEN || PSA_TOKEN.length < 50) {
+                resultDiv.innerHTML = `<span class="error">❌ INVALID TOKEN</span>\n\nToken is too short or missing.`;
+                return;
+            }
+
+            resultDiv.innerHTML = `<span class="success">✅ Token Format OK</span>\n\nToken length: ${PSA_TOKEN.length} characters\nToken preview: ${PSA_TOKEN.substring(0, 50)}...\n\nNote: This only checks the format, not if the token is valid with PSA.`;
+        }
+    </script>
+</body>
+
+</html>

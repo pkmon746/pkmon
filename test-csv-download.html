@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PriceCharting CSV Test</title>
+</head>
+
+<body>
+    <h1>PriceCharting CSV Download Test</h1>
+    <button onclick="testCSV()">Test CSV Download</button>
+    <pre id="result"></pre>
+
+    <script>
+        async function testCSV() {
+            const url = 'https://www.pricecharting.com/price-guide/download-custom?t=e8b39b271ff62d9572736d3a6e8e8050edb53704&category=pokemon-cards';
+            const result = document.getElementById('result');
+
+            result.textContent = 'Testing CSV download...\n';
+            result.textContent += `URL: ${url}\n\n`;
+
+            try {
+                const response = await fetch(url);
+                result.textContent += `Status: ${response.status} ${response.statusText}\n`;
+                result.textContent += `Headers:\n`;
+                for (const [key, value] of response.headers.entries()) {
+                    result.textContent += `  ${key}: ${value}\n`;
+                }
+
+                if (response.ok) {
+                    const text = await response.text();
+                    result.textContent += `\nResponse (first 500 chars):\n${text.substring(0, 500)}`;
+                    result.textContent += `\n\nTotal length: ${text.length} bytes`;
+                } else {
+                    result.textContent += `\nError: ${response.statusText}`;
+                }
+            } catch (error) {
+                result.textContent += `\n❌ ERROR: ${error.message}\n`;
+                result.textContent += `\nThis is likely a CORS (Cross-Origin Resource Sharing) error.\n`;
+                result.textContent += `PriceCharting blocks direct browser access to CSV.\n`;
+                result.textContent += `\nSolution: Use a server-side proxy to fetch the CSV.`;
+            }
+        }
+    </script>
+</body>
+
+</html>

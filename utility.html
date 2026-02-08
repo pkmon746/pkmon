@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Utility - $PKMON - PKMONAD</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.png" alt="PKMONAD Logo">
+                <span>PKMONAD</span>
+            </a>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Pokédex <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="pokedex.html" class="dropdown-item">Pokédex</a>
+                        <a href="tcg-search.html" class="dropdown-item">Poké TCG</a>
+                        <a href="pokememe.html" class="dropdown-item">PokéMeme</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="train.html" class="nav-link">Train</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link active">
+                        $PKMON <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777" target="_blank"
+                            class="dropdown-item">How to buy</a>
+                        <a href="utility.html" class="dropdown-item">Utility</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Poké Center <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="https://x.com/pkmonad" target="_blank" class="dropdown-item">X (Twitter)</a>
+                        <a href="https://t.me/pkmonad" target="_blank" class="dropdown-item">Telegram</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="agent-dashboard.html" class="nav-link btn-start">START</a>
+                </li>
+                <li class="nav-item">
+                    <button class="btn-wallet" id="connectWalletBtn">
+                        <i class="fas fa-wallet"></i> Connect Wallet
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Utility Section -->
+    <section class="section" style="padding-top: calc(var(--nav-height) + 3rem);">
+        <div class="container">
+            <div class="page-header fade-in">
+                <h1>$PKMON Utility</h1>
+                <p>Token-Powered Real World Asset Investment & Revenue Sharing</p>
+            </div>
+
+            <!-- Token Utility: Fractional DAO Investment -->
+            <div class="utility-section">
+                <h2 class="section-title">
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/151.png"
+                        style="width: 60px; height: 60px; vertical-align: middle; margin-right: 1rem;">
+                    Fractional Card Investment DAO
+                </h2>
+
+                <div class="utility-grid">
+                    <div class="utility-card fade-in">
+                        <div class="step-number">1</div>
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png"
+                            alt="Pikachu">
+                        <h3>Token Holders Vote</h3>
+                        <p>$PKMON token holders participate in decentralized governance to select high-value Pokémon TCG
+                            cards for investment</p>
+                    </div>
+
+                    <div class="utility-card fade-in" style="animation-delay: 0.2s;">
+                        <div class="step-number">2</div>
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/54.png"
+                            alt="Psyduck">
+                        <h3>Fractional Ownership</h3>
+                        <p>Cards are purchased and tokenized, allowing token holders to own fractional shares of premium
+                            graded cards</p>
+                    </div>
+
+                    <div class="utility-card fade-in" style="animation-delay: 0.4s;">
+                        <div class="step-number">3</div>
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/7.png"
+                            alt="Squirtle">
+                        <h3>DAO Voting</h3>
+                        <p>Token holders vote on key decisions: when to sell, what price to accept, and how to manage
+                            the portfolio</p>
+                    </div>
+
+                    <div class="utility-card fade-in" style="animation-delay: 0.6s;">
+                        <div class="step-number">4</div>
+                        <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/1.png"
+                            alt="Bulbasaur">
+                        <h3>Profit Distribution</h3>
+                        <p>When cards are sold, profits are distributed proportionally to $PKMON token holders based on
+                            their holdings</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Share Program -->
+            <div class="revenue-section" style="margin-top: 6rem;">
+                <h2 class="section-title">
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/384.png"
+                        style="width: 60px; height: 60px; vertical-align: middle; margin-right: 1rem;">
+                    REV Share Program
+                </h2>
+
+                <div class="rev-share-card glass-card">
+                    <div class="rev-share-content">
+                        <div class="rev-share-info">
+                            <h3>Exclusive Rewards for Top Holders</h3>
+                            <p
+                                style="font-size: 1.1rem; color: var(--text-secondary); margin-bottom: 2rem; line-height: 1.8;">
+                                Top 10 holders or wallets holding 10M+ $PKMON tokens gain access to exclusive
+                                revenue-sharing opportunities
+                                and special perks in the PKMONAD ecosystem.
+                            </p>
+
+                            <div class="benefits-grid">
+                                <div class="benefit-item">
+                                    <i class="fas fa-gift" style="color: var(--accent-pink);"></i>
+                                    <div>
+                                        <h4>rENAISS Card Gacha</h4>
+                                        <p>Participate in exclusive card gacha events with premium rewards</p>
+                                    </div>
+                                </div>
+
+                                <div class="benefit-item">
+                                    <i class="fas fa-trophy" style="color: var(--accent-yellow);"></i>
+                                    <div>
+                                        <h4>Priority Access</h4>
+                                        <p>First access to new card investments and trading opportunities</p>
+                                    </div>
+                                </div>
+
+                                <div class="benefit-item">
+                                    <i class="fas fa-percentage" style="color: var(--accent-green);"></i>
+                                    <div>
+                                        <h4>Revenue Sharing</h4>
+                                        <p>Share in platform trading fees and arbitrage profits</p>
+                                    </div>
+                                </div>
+
+                                <div class="benefit-item">
+                                    <i class="fas fa-crown" style="color: var(--secondary-purple);"></i>
+                                    <div>
+                                        <h4>VIP Status</h4>
+                                        <p>Exclusive Discord role, early announcements, and community perks</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rev-share-visual">
+                            <div class="pokemon-stack">
+                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/144.png"
+                                    alt="Articuno" class="animate-float">
+                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/145.png"
+                                    alt="Zapdos" class="animate-float" style="animation-delay: 0.5s;">
+                                <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/146.png"
+                                    alt="Moltres" class="animate-float" style="animation-delay: 1s;">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Call to Action -->
+            <div class="cta-section" style="text-align: center; margin-top: 5rem;">
+                <h2 style="font-size: 2.5rem; margin-bottom: 1.5rem;">Ready to Join?</h2>
+                <p style="font-size: 1.2rem; color: var(--text-secondary); margin-bottom: 2.5rem;">
+                    Get $PKMON tokens and start participating in the future of TCG investing
+                </p>
+                <a href="https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777" target="_blank"
+                    class="btn-primary animate-glow">
+                    Buy $PKMON
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <style>
+        .page-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .page-header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #FFFFFF, var(--secondary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .utility-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .utility-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .utility-card:hover {
+            transform: translateY(-10px);
+            border-color: var(--primary-purple);
+            box-shadow: var(--shadow-purple);
+        }
+
+        .step-number {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .utility-card img {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 1rem;
+        }
+
+        .utility-card h3 {
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+        }
+
+        .utility-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .rev-share-card {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .rev-share-content {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        .benefits-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .benefit-item {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .benefit-item i {
+            font-size: 2rem;
+            margin-top: 0.25rem;
+        }
+
+        .benefit-item h4 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .benefit-item p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .pokemon-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .pokemon-stack img {
+            width: 140px;
+            height: 140px;
+            filter: drop-shadow(0 10px 30px rgba(124, 58, 237, 0.4));
+        }
+
+        @media (max-width: 968px) {
+            .rev-share-content {
+                grid-template-columns: 1fr;
+            }
+
+            .pokemon-stack {
+                flex-direction: row;
+                justify-content: center;
+            }
+        }
+    </style>
+
+    <script src="assets/wallet.js"></script>
+</body>
+
+</html>
