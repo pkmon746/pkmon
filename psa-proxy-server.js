@@ -10,6 +10,9 @@ const app = express();
 app.use(cors()); // Enable CORS for your frontend
 app.use(express.json());
 
+// Serve static files (추가된 코드)
+app.use(express.static('.'));
+
 // PSA API Configuration
 const PSA_API_URL = 'https://api.psacard.com/publicapi';
 const PSA_TOKEN = 'C2MNdaW2IO9Xlbm1MXC0Q_ARCaVfQbkldZRsMYd6oWP8ZACXog6jzv6X7QrgyWwYRgNmU3fn5tKp99zf8lRHiugZiEsjnOl4t_EpApf7JixN7HXvzwkGUZ8jxfpYNqszBBUZsOHS0mRatl3h-KxNvyd0qHV-QuDyryiiEFMq50tdWIiqrLEdil0xGi478LrtrLfnB9kP10jBpk6_dWV_UjI6jRF9_gRwQy3meG9Bitgvpghg-1DImavKxNW_i6ojZYrCIY5DK3w3uMkniqr8DNunZxZu-2c25o7dymeXq8DqU_Wh';
@@ -115,10 +118,18 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', message: 'PSA Proxy Server is running', timestamp: new Date().toISOString() });
 });
 
-const PORT = 3000;
-app.listen(PORT, () => {
-    console.log(`\n🚀 PSA Proxy Server running on http://localhost:${PORT}`);
-    console.log(`📡 Proxy endpoint: http://localhost:${PORT}/api/psa/cert/{certNumber}`);
-    console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+//const PORT = 3000;
+//app.listen(PORT, () => {
+    //console.log(`\n🚀 PSA Proxy Server running on http://localhost:${PORT}`);
+    //console.log(`📡 Proxy endpoint: http://localhost:${PORT}/api/psa/cert/{certNumber}`);
+    //console.log(`❤️  Health check: http://localhost:${PORT}/health`);
+    //console.log(`⏰ Started at: ${new Date().toISOString()}\n`);
+//});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🚀 PSA Proxy Server running on port ${PORT}`);
+    console.log(`📡 Proxy endpoint: /api/psa/cert/{certNumber}`);
+    console.log(`❤️  Health check: /health`);
     console.log(`⏰ Started at: ${new Date().toISOString()}\n`);
 });
