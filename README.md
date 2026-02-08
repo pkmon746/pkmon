@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # PKMONAD Website - Quick Start Guide
 
 ## 🚀 How to Run
@@ -70,3 +71,6 @@ pkmonad-project/
 ---
 
 **Ready to test! Open index.html in your browser to get started. 🎉**
+=======
+# pkmon
+>>>>>>> 7ab9844b92d6be8058a9adb5a29901b1a774eb3e
