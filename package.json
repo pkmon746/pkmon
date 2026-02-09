@@ -5,12 +5,17 @@
     "main": "psa-proxy-server.js",
     "scripts": {
         "start": "node psa-proxy-server.js",
+        "battle-server": "node battle-server.js",
         "dev": "nodemon psa-proxy-server.js"
     },
     "dependencies": {
-        "express": "^4.18.2",
+        "cheerio": "^1.2.0",
         "cors": "^2.8.5",
-        "node-fetch": "^2.7.0"
+        "express": "^4.18.2",
+        "node-fetch": "^2.7.0",
+        "puppeteer": "^24.37.2",
+        "puppeteer-extra": "^3.3.6",
+        "puppeteer-extra-plugin-stealth": "^2.11.2"
     },
     "devDependencies": {
         "nodemon": "^3.0.1"

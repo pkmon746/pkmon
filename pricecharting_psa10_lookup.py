@@ -68,18 +68,19 @@ def get_psa10_price(card_name: str, set_name: str, card_number: str, api_token: 
         console_name = product.get('console-name', 'Unknown')
         
         # PSA 10 가격 추출 (manual-only-price = PSA GEM MT 10 price)
+        # IMPORTANT: PriceCharting returns prices in CENTS, divide by 100
         manual_only_price = product.get('manual-only-price')
         graded_price = product.get('graded-price')
         
-        # 가격 변환
-        price_psa10 = float(manual_only_price) if manual_only_price else None
-        price_graded = float(graded_price) if graded_price else None
+        # 가격 변환 (센트 → 달러)
+        price_psa10 = float(manual_only_price) / 100 if manual_only_price else None
+        price_graded = float(graded_price) / 100 if graded_price else None
         
         print(f"\n📦 Result:")
         print(f"   Product: {product_name}")
         print(f"   Console: {console_name}")
-        print(f"   PSA 10 Price (manual-only-price): ${price_psa10:.2f}" if price_psa10 else "   PSA 10 Price: N/A")
-        print(f"   Graded Price: ${price_graded:.2f}" if price_graded else "   Graded Price: N/A")
+        print(f"   PSA 10 Price (manual-only-price): ${price_psa10:.2f} (raw: {manual_only_price} cents)" if price_psa10 else "   PSA 10 Price: N/A")
+        print(f"   Graded Price: ${price_graded:.2f} (raw: {graded_price} cents)" if price_graded else "   Graded Price: N/A")
         
         return {
             'price_psa10': price_psa10,

@@ -109,6 +109,46 @@ app.get('/api/pricecharting/csv', async (req, res) => {
     }
 });
 
+const { exec } = require('child_process');
+
+// SNKRDUNK endpoint - Search via Python Bridge (DB Query)
+app.get('/api/snkrdunk/search', (req, res) => {
+    const { name, set, number } = req.query;
+
+    if (!name) {
+        return res.status(400).json({ success: false, error: 'Missing name parameter' });
+    }
+
+    console.log(`\n========================================`);
+    console.log(`[SNKRDUNK Search] Querying DB for: ${name}`);
+
+    // Execute Python script to query SQLite DB
+    // Pass Name, Set, Number to help scraper accuracy if needed
+    // quote arguments to handle spaces
+    const command = `python query_snkrdunk_db.py "${name}" "${set || ''}" "${number || ''}"`;
+
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`[SNKRDUNK Search] Exec error: ${error.message}`);
+            return res.status(500).json({ success: false, error: 'Internal server error' });
+        }
+
+        try {
+            const rawOutput = stdout.trim();
+            // Find the last line which should be the JSON
+            const jsonOutput = rawOutput.split('\n').pop();
+
+            const result = JSON.parse(jsonOutput);
+            console.log(`[SNKRDUNK Search] Result:`, result);
+            console.log(`========================================\n`);
+            res.json(result);
+        } catch (e) {
+            console.error(`[SNKRDUNK Search] Parse error: ${e.message}`);
+            res.status(500).json({ success: false, error: 'Failed to parse python output' });
+        }
+    });
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
     console.log('[Health Check] Request received');
@@ -118,7 +158,10 @@ app.get('/health', (req, res) => {
 const PORT = 3000;
 app.listen(PORT, () => {
     console.log(`\n🚀 PSA Proxy Server running on http://localhost:${PORT}`);
-    console.log(`📡 Proxy endpoint: http://localhost:${PORT}/api/psa/cert/{certNumber}`);
+    console.log(`📡 PSA endpoint: http://localhost:${PORT}/api/psa/cert/{certNumber}`);
+    console.log(`🎴 SNKRDUNK ID endpoint: http://localhost:${PORT}/api/snkrdunk/id/{cardId} (NO Puppeteer!)`);
+    console.log(`🔍 SNKRDUNK Search endpoint: http://localhost:${PORT}/api/snkrdunk/search?name=Gengar`);
+    console.log(`📊 CSV endpoint: http://localhost:${PORT}/api/pricecharting/csv`);
     console.log(`❤️  Health check: http://localhost:${PORT}/health`);
     console.log(`⏰ Started at: ${new Date().toISOString()}\n`);
 });

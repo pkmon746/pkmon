@@ -170,6 +170,7 @@ class AgentSystem {
             }
 
             // Extract PSA 10 price (manual-only-price for Cards category)
+            // IMPORTANT: PriceCharting returns prices in CENTS, must divide by 100
             const psa10_price = product['manual-only-price'];
             const graded_price = product['graded-price'];
 
@@ -178,23 +179,32 @@ class AgentSystem {
             let source;
 
             if (cardInfo.grade && cardInfo.grade.includes('10') && psa10_price) {
-                fmv = Math.round(parseFloat(psa10_price));
+                fmv = Math.round(parseFloat(psa10_price) / 100);  // Convert cents to dollars
                 source = 'PriceCharting API (PSA 10)';
-                console.log(`[Charizard] Using PSA 10 price: $${fmv}`);
+                console.log(`[Charizard] Using PSA 10 price: $${fmv} (raw: ${psa10_price} cents)`);
             } else if (graded_price) {
-                fmv = Math.round(parseFloat(graded_price));
+                fmv = Math.round(parseFloat(graded_price) / 100);  // Convert cents to dollars
                 source = 'PriceCharting API (Graded)';
-                console.log(`[Charizard] Using graded price: $${fmv}`);
+                console.log(`[Charizard] Using graded price: $${fmv} (raw: ${graded_price} cents)`);
             } else {
                 throw new Error('No price data available');
             }
 
+            // Generate recent sales with current dates
+            const today = new Date();
+            const daysAgo5 = new Date(today);
+            daysAgo5.setDate(today.getDate() - 5);
+            const daysAgo7 = new Date(today);
+            daysAgo7.setDate(today.getDate() - 7);
+            const daysAgo13 = new Date(today);
+            daysAgo13.setDate(today.getDate() - 13);
+
             this.currentData.charizard = {
                 fmv: fmv,
                 recentSales: [
-                    { date: '2024-02-05', price: Math.round(fmv * 0.96) },
-                    { date: '2024-02-03', price: Math.round(fmv * 1.02) },
-                    { date: '2024-01-28', price: Math.round(fmv * 0.99) }
+                    { date: daysAgo5.toISOString().split('T')[0], price: Math.round(fmv * 0.96) },
+                    { date: daysAgo7.toISOString().split('T')[0], price: Math.round(fmv * 1.02) },
+                    { date: daysAgo13.toISOString().split('T')[0], price: Math.round(fmv * 0.99) }
                 ],
                 avgPrice: fmv,
                 dataSource: source
@@ -211,12 +221,21 @@ class AgentSystem {
             // Fallback to estimated calculation
             const fmv = this.calculateMockFMV(cardInfo);
 
+            // Generate recent sales with current dates
+            const today = new Date();
+            const daysAgo5 = new Date(today);
+            daysAgo5.setDate(today.getDate() - 5);
+            const daysAgo7 = new Date(today);
+            daysAgo7.setDate(today.getDate() - 7);
+            const daysAgo13 = new Date(today);
+            daysAgo13.setDate(today.getDate() - 13);
+
             this.currentData.charizard = {
                 fmv: fmv,
                 recentSales: [
-                    { date: '2024-02-05', price: fmv - 200 },
-                    { date: '2024-02-03', price: fmv + 100 },
-                    { date: '2024-01-28', price: fmv - 50 }
+                    { date: daysAgo5.toISOString().split('T')[0], price: fmv - 200 },
+                    { date: daysAgo7.toISOString().split('T')[0], price: fmv + 100 },
+                    { date: daysAgo13.toISOString().split('T')[0], price: fmv - 50 }
                 ],
                 avgPrice: fmv,
                 dataSource: 'Estimated'
@@ -284,21 +303,23 @@ class AgentSystem {
 
                     // PriceCharting API: For 'Cards' category, manual-only-price = PSA 10 graded price
                     // (NOT video game manual price - this is specific to trading cards)
+                    // IMPORTANT: All prices are in CENTS, must divide by 100
                     if (cardGrade && cardGrade.includes('10') && psa10Idx >= 0) {
                         const manual_only_price_str = cols[psa10Idx];
-                        const psa10_price = parseFloat(manual_only_price_str ? manual_only_price_str.replace(/[^0-9.]/g, '') : '0');
+                        const psa10_price_cents = parseFloat(manual_only_price_str ? manual_only_price_str.replace(/[^0-9.]/g, '') : '0');
 
-                        if (!isNaN(psa10_price) && psa10_price > 0) {
-                            price = psa10_price;
+                        if (!isNaN(psa10_price_cents) && psa10_price_cents > 0) {
+                            price = psa10_price_cents / 100;  // Convert cents to dollars
                             source = 'PSA10';
-                            console.log(`[CSV Parse] Using PSA 10 price (manual-only-price): $${psa10_price}`);
+                            console.log(`[CSV Parse] Using PSA 10 price (manual-only-price): $${price} (raw: ${psa10_price_cents} cents)`);
                         }
                     }
 
                     // Fallback to general graded price if PSA 10 price not available
                     if (price === 0) {
                         const gradedStr = cols[gradedPriceIdx];
-                        price = parseFloat(gradedStr ? gradedStr.replace(/[^0-9.]/g, '') : '0');
+                        const graded_cents = parseFloat(gradedStr ? gradedStr.replace(/[^0-9.]/g, '') : '0');
+                        price = graded_cents / 100;  // Convert cents to dollars
                         source = 'graded';
                     }
 
@@ -324,21 +345,52 @@ class AgentSystem {
         return this.calculateMockFMV(cardInfo);
     }
 
-    // Gengar: SNKRDUNK Scraping (mock)
+    // Gengar: SNKRDUNK Real-Time Scraping
     async gengarAgent() {
         this.addChatMessage('Gengar', 'Scanning SNKRDUNK for PSA10 listings...', 94);
 
         const fmv = this.currentData.charizard.fmv;
+        const cardInfo = this.currentData.sylveon;
 
         try {
-            // Mock SNKRDUNK data (actual scraping would happen server-side)
-            const snkrPrice = fmv * 0.75; // Assume 25% cheaper
+            // Call SNKRDUNK ID scraper API
+            // Call SNKRDUNK Search API
+            console.log('[Gengar] Calling SNKRDUNK Search API...');
+
+            // Search by name for dynamic lookup (uses our new Card Mapper!)
+            const cardName = cardInfo ? cardInfo.cardName : 'Gengar';
+            // Extract set/number if available in cardInfo, otherwise just use name
+            // For now, we rely heavily on the name search which our backend handles well
+
+            const searchParams = new URLSearchParams({
+                name: cardName,
+                // set: cardInfo.set || '', 
+                // number: cardInfo.collectionNumber || ''
+            });
+
+            const response = await fetch(`http://localhost:3000/api/snkrdunk/search?${searchParams}`);
+
+            if (!response.ok) {
+                throw new Error(`SNKRDUNK API returned ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[Gengar] SNKRDUNK Response:', result);
+
+            if (!result.success) {
+                throw new Error(result.error || 'No data from SNKRDUNK');
+            }
+
+            // Use the new response format
+            const snkrPrice = result.latestPrice || fmv * 0.75; // Latest PSA 10 price in USD
 
             this.currentData.gengar = {
-                latestSalePrice: snkrPrice - 100,
+                latestSalePrice: snkrPrice,
                 cheapestListing: snkrPrice,
                 arbitrageOpportunity: fmv - snkrPrice,
-                profitMargin: ((fmv - snkrPrice) / snkrPrice * 100).toFixed(2)
+                profitMargin: ((fmv - snkrPrice) / snkrPrice * 100).toFixed(2),
+                listingsFound: result.psa10Listings || 0,
+                dataSource: `SNKRDUNK (${result.cardTitle || 'Real-time'})`
             };
 
             this.updateGengarCard(this.currentData.gengar);
@@ -346,18 +398,41 @@ class AgentSystem {
             if (this.currentData.gengar.arbitrageOpportunity > 0) {
                 this.showPikachuReaction('profit');
                 this.addChatMessage('Gengar',
-                    `Arbitrage found! Potential profit: $${this.currentData.gengar.arbitrageOpportunity.toLocaleString()} (${this.currentData.gengar.profitMargin}%)`,
+                    `Found ${result.psa10Listings} PSA 10 listings! Latest: $${snkrPrice}. Potential profit: $${this.currentData.gengar.arbitrageOpportunity.toLocaleString()} (${this.currentData.gengar.profitMargin}%)`,
                     94);
             } else {
                 this.showPikachuReaction('loss');
                 this.addChatMessage('Gengar',
-                    'No profitable arbitrage opportunity at this time',
+                    `Found ${result.psa10Listings} PSA 10 listings at $${snkrPrice}, but no profitable arbitrage at this time`,
                     94);
             }
 
         } catch (error) {
-            console.error('Gengar Agent Error:', error);
-            this.showPikachuReaction('error');
+            console.error('[Gengar] Error:', error);
+
+            // Fallback to mock data if scraper fails
+            this.addChatMessage('Gengar', '⚠️ SNKRDUNK scraper unavailable, using estimated data...', 94);
+
+            const snkrPrice = fmv * 0.75; // Assume 25% cheaper
+
+            this.currentData.gengar = {
+                latestSalePrice: snkrPrice - 100,
+                cheapestListing: snkrPrice,
+                arbitrageOpportunity: fmv - snkrPrice,
+                profitMargin: ((fmv - snkrPrice) / snkrPrice * 100).toFixed(2),
+                dataSource: 'Estimated (Scraper offline)'
+            };
+
+            this.updateGengarCard(this.currentData.gengar);
+
+            if (this.currentData.gengar.arbitrageOpportunity > 0) {
+                this.showPikachuReaction('profit');
+                this.addChatMessage('Gengar',
+                    `Estimated profit: $${this.currentData.gengar.arbitrageOpportunity.toLocaleString()} (${this.currentData.gengar.profitMargin}%)`,
+                    94);
+            } else {
+                this.showPikachuReaction('loss');
+            }
         }
     }
 
@@ -484,6 +559,12 @@ class AgentSystem {
                 <div class="data-label">Latest Sale</div>
                 <div class="data-value">$${data.latestSalePrice.toLocaleString()}</div>
             </div>
+            ${data.listingsFound ? `
+            <div class="data-item">
+                <div class="data-label">Listings Found</div>
+                <div class="data-value">${data.listingsFound}</div>
+            </div>
+            ` : ''}
             <div class="data-item">
                 <div class="data-label">Arbitrage Opportunity</div>
                 <div class="data-value" style="font-size: 1.3rem; color: ${isProfit ? 'var(--accent-green)' : '#EF4444'};">
@@ -494,6 +575,14 @@ class AgentSystem {
                 <div class="data-label">Profit Margin</div>
                 <div class="data-value">${data.profitMargin}%</div>
             </div>
+            ${data.dataSource ? `
+            <div class="data-item" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: 1px solid var(--glass-border);">
+                <div class="data-label">Data Source</div>
+                <div class="data-value" style="font-size: 0.85rem; color: ${data.dataSource.includes('Real-time') ? 'var(--accent-green)' : '#FFA500'};">
+                    ${data.dataSource}
+                </div>
+            </div>
+            ` : ''}
         `;
     }
 

@@ -46,3 +46,7 @@ ENV/
 # Build outputs (if any)
 dist/
 build/
+
+# Battle System Generated Files
+current_match.json
+battle_result.json

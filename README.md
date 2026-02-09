@@ -1,76 +1,79 @@
-<<<<<<< HEAD
-# PKMONAD Website - Quick Start Guide
+# PKMONAD - Pokemon Card Trading Platform
 
-## 🚀 How to Run
+> Real-time Pokemon card price analysis and trading dashboard
 
-1. **Open in Browser**:
-   - Navigate to: `c:\Users\pc\Desktop\pkmonad-project\index.html`
-   - Or double-click `index.html` in File Explorer
+## 🎯 Overview
 
-2. **Test Features**:
-   - ✅ Click through all navigation menus
-   - ✅ Search for Pokémon in Pokédex (try "pikachu")
-   - ✅ Search for cards in TCG page (try "charizard")  
-   - ✅ Click START to open Agent Dashboard
-   - ✅ Enter any number as CERT and click "Start Analysis"
-   - ✅ Watch Pikachu walk and agents populate with data
+PKMONAD is a Pokemon card trading platform that provides real-time market data integration with PSA certification lookup and PriceCharting price analysis.
 
-3. **Connect Wallet** (Optional):
-   - Install MetaMask or Rabby Wallet extension
-   - Click "Connect Wallet" button
-   - Approve connection and network switch
+## 🚀 Quick Start
 
-## 📁 Files Created
+1. **Install Dependencies**
+```bash
+npm install
+```
+
+2. **Configure Environment**
+Create `.env` file:
+```
+PSA_API_KEY=your_psa_api_key
+PRICECHARTING_API_KEY=your_pricecharting_api_key
+```
+
+3. **Start Proxy Server**
+```bash
+node psa-proxy-server.js
+```
+
+4. **Open Dashboard**
+Open `index.html` in your browser
+
+## 📁 Project Structure
 
 ```
 pkmonad-project/
-├── index.html              ← Main landing page (START HERE)
-├── pokedex.html           ← Pokémon database
-├── tcg-search.html        ← TCG card search
-├── pokememe.html          ← Coming soon page
-├── train.html             ← Agent explanation
-├── utility.html           ← Token utility
-├── agent-dashboard.html   ← Trading dashboard
-├── styles.css             ← Design system
-└── assets/
-    ├── config.js          ← API keys
-    ├── wallet.js          ← Wallet connection
-    ├── agents.js          ← Agent system
-    └── logo.png           ← Logo (SVG placeholder)
+├── index.html                  # Main trading dashboard
+├── psa-proxy-server.js         # PSA/PriceCharting API proxy
+├── pricecharting_psa10_lookup.py  # PSA 10 price lookup utility
+├── styles.css                  # Design system
+├── assets/                     # Configuration & utilities
+│   ├── config.js
+│   ├── wallet.js
+│   └── agents.js
+├── pokedex.html               # Pokemon database
+├── tcg-search.html            # TCG card search
+├── train.html                 # Agent explanation
+├── utility.html               # Token utility
+└── pokememe.html             # Community page
 ```
 
-## ✨ What Works
+## ✨ Features
 
-✅ All pages with navigation and dropdowns
-✅ PokéAPI integration (Pokédex)
-✅ Pokémon TCG API (card search)
-✅ PSA API configured (token included)
-✅ Currency/crypto rates (live data)
-✅ Wallet connection (MetaMask/Rabby)
-✅ Monad network support
-✅ 4 agents with chat interface
-✅ Animated Pikachu with reactions
-✅ Arbitrage analysis display
-✅ Responsive design
-✅ Purple theme throughout
-✅ All content in English
+- ✅ PSA API integration (cert lookup)
+- ✅ PriceCharting API (price data, CSV download)
+- ✅ Real-time exchange rates (USD, KRW, Crypto)
+- ✅ Multi-agent analysis system
+- ✅ Wallet connection (MetaMask/Rabby)
+- ✅ Monad network support
 
-## 🔧 Next Steps
+## 🔧 API Integration
 
-1. Replace `assets/logo.png` with your purple logo
-2. Add PriceCharting API key when ready (in `assets/config.js`)
-3. Test with real PSA CERT numbers
-4. Deploy to hosting platform
+### PSA API
+- Certification lookup by CERT number
+- Population reports
+- Grade verification
 
-## 🌐 External Links (All Working)
+### PriceCharting API
+- Market prices (Ungraded, PSA 9, PSA 10)
+- Recent sales history
+- CSV export for bulk lookup
 
-- How to buy: https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777
+## 🌐 Links
+
+- Buy $PKMON: https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777
 - Twitter: https://x.com/pkmonad
 - Telegram: https://t.me/pkmonad
 
----
+## 📝 License
 
-**Ready to test! Open index.html in your browser to get started. 🎉**
-=======
-# pkmon
->>>>>>> 7ab9844b92d6be8058a9adb5a29901b1a774eb3e
+MIT
