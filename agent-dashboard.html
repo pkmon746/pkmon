@@ -7,326 +7,6 @@
     <title>Agent Dashboard - PKMONAD</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        /* Agent Dashboard 전용 스타일 (styles.css와 중복되지 않는 부분만) */
-        
-        /* Dashboard Header */
-        .dashboard-header {
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-
-        .dashboard-header h1 {
-            font-size: 3rem;
-            margin-bottom: 0.5rem;
-            background: linear-gradient(135deg, #FFFFFF, var(--secondary-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        /* CERT Input Section */
-        .cert-input-section {
-            max-width: 1200px;
-            margin: 0 auto 3rem;
-        }
-
-        .input-card h3 {
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
-        }
-
-        .input-card h3 i {
-            color: var(--accent-yellow);
-            margin-right: 0.75rem;
-        }
-
-        .cert-input-group {
-            display: flex;
-            gap: 1rem;
-        }
-
-        .cert-input-group input {
-            flex: 1;
-            padding: 1rem 1.5rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid var(--glass-border);
-            border-radius: 12px;
-            color: white;
-            font-size: 1.1rem;
-        }
-
-        .cert-input-group input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
-
-        .cert-input-group input:focus {
-            outline: none;
-            border-color: var(--primary-purple);
-        }
-
-        /* Agent Chat Section */
-        .agent-chat-section {
-            margin-bottom: 3rem;
-            position: relative;
-        }
-
-        .chat-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .chat-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--glass-border);
-            margin-bottom: 1.5rem;
-        }
-
-        .chat-header h3 {
-            font-size: 1.5rem;
-        }
-
-        .agent-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
-            background: var(--accent-green);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-
-        .chat-messages {
-            min-height: 300px;
-            max-height: 500px;
-            overflow-y: auto;
-            padding: 1rem;
-        }
-
-        .welcome-message {
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 3rem 0;
-        }
-
-        /* Chat Message Styles */
-        .chat-message {
-            display: flex;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-            animation: slideIn 0.3s ease;
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .message-avatar {
-            flex-shrink: 0;
-        }
-
-        .message-avatar img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 0.25rem;
-        }
-
-        .message-content {
-            flex: 1;
-        }
-
-        .message-sender {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            color: var(--accent-yellow);
-        }
-
-        .message-text {
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        /* Agent Dashboard Cards */
-        .agents-grid-dashboard {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 2rem;
-            margin-bottom: 3rem;
-            max-width: 1200px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .agent-dashboard-card {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .agent-dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .agent-card-header {
-            padding: 2rem 1rem 1rem;
-            text-align: center;
-            position: relative;
-        }
-
-        .agent-card-header img {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 1rem;
-            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
-        }
-
-        .agent-card-header h4 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-            color: white;
-        }
-
-        .agent-role {
-            display: block;
-            font-size: 0.9rem;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
-        }
-
-        .agent-card-body {
-            padding: 1.5rem;
-            background: rgba(0, 0, 0, 0.3);
-            min-height: 150px;
-        }
-
-        .agent-waiting {
-            text-align: center;
-            color: rgba(255, 255, 255, 0.6);
-            padding: 2rem 0;
-        }
-
-        .agent-waiting i {
-            font-size: 2rem;
-            margin-bottom: 1rem;
-            display: block;
-            opacity: 0.5;
-        }
-
-        .agent-waiting p {
-            font-size: 0.9rem;
-        }
-
-        /* Data Display Styles */
-        .data-item {
-            margin-bottom: 1rem;
-        }
-
-        .data-label {
-            font-size: 0.85rem;
-            color: rgba(255, 255, 255, 0.6);
-            margin-bottom: 0.25rem;
-        }
-
-        .data-value {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: white;
-        }
-
-        /* Hamburger Menu Animation (styles.css에 없는 부분) */
-        .nav-toggle.active span:nth-child(1) {
-            transform: rotate(45deg) translate(7px, 7px);
-        }
-
-        .nav-toggle.active span:nth-child(2) {
-            opacity: 0;
-        }
-
-        .nav-toggle.active span:nth-child(3) {
-            transform: rotate(-45deg) translate(7px, -7px);
-        }
-
-        /* Mobile Dropdown */
-        .nav-item.dropdown-open .dropdown-menu {
-            display: block;
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .agents-grid-dashboard {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .dashboard-header h1 {
-                font-size: 2.5rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-header h1 {
-                font-size: 2rem;
-            }
-
-            .cert-input-group {
-                flex-direction: column;
-            }
-
-            .chat-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
-            }
-        }
-
-        @media (max-width: 600px) {
-            .agents-grid-dashboard {
-                grid-template-columns: 1fr;
-            }
-
-            .dashboard-header h1 {
-                font-size: 1.75rem;
-            }
-
-            .agent-card-header img {
-                width: 100px;
-                height: 100px;
-            }
-
-            .agent-card-header h4 {
-                font-size: 1.25rem;
-            }
-        }
-    </style>
 </head>
 
 <body>
@@ -339,13 +19,11 @@
                 <span>PKMONAD</span>
             </a>
 
-            <button class="nav-toggle" id="navToggle">
-                <span></span>
-                <span></span>
-                <span></span>
+            <button class="nav-toggle" id="navToggle" onclick="this.classList.toggle('active'); document.querySelector('.nav-menu').classList.toggle('open')">
+                <span></span><span></span><span></span>
             </button>
 
-            <ul class="nav-menu" id="navMenu">
+            <ul class="nav-menu">
                 <li class="nav-item">
                     <a href="#" class="nav-link">
                         Pokédex <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
@@ -379,7 +57,7 @@
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="agent-dashboard.html" class="nav-link active">START</a>
+                    <a href="agent-dashboard.html" class="nav-link btn-start active">START</a>
                 </li>
                 <li class="nav-item">
                     <button class="btn-wallet" id="connectWalletBtn">
@@ -429,6 +107,13 @@
                             <p>Enter a PSA CERT number to begin the arbitrage analysis!</p>
                         </div>
                     </div>
+                </div>
+
+                <!-- Animated Pikachu -->
+                <div class="pikachu-container" id="pikachuContainer">
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/25.gif"
+                        alt="Pikachu" id="pikachuSprite" class="pikachu-sprite">
+                    <div class="pikachu-speech" id="pikachuSpeech"></div>
                 </div>
             </div>
 
@@ -498,423 +183,406 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Arbitrage Results -->
+            <div class="arbitrage-results" id="arbitrageResults" style="display: none;">
+                <div class="results-card glass-card">
+                    <h2><i class="fas fa-analytics"></i> Arbitrage Analysis Results</h2>
+                    <div class="comparison-grid" id="comparisonGrid"></div>
+                </div>
+            </div>
         </div>
     </section>
 
-    <script>
-        // Agent System for PKMONAD Trading Dashboard
-        // Handles communication between 4 agents and orchestrates arbitrage analysis
+    <style>
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
 
-        class AgentSystem {
-            constructor() {
-                this.psaToken = 'C2MNdaW2IO9Xlbm1MXC0Q_ARCaVfQbkldZRsMYd6oWP8ZACXog6jzv6X7QrgyWwYRgNmU3fn5tKp99zf8lRHiugZiEsjnOl4t_EpApf7JixN7HXvzwkGUZ8jxfpYNqszBBUZsOHS0mRatl3h-KxNvyd0qHV-QuDyryiiEFMq50tdWIiqrLEdil0xGi478LrtrLfnB9kP10jBpk6_dWV_UjI6jRF9_gRwQy3meG9Bitgvpghg-1DImavKxNW_i6ojZYrCIY5DK3w3uMkniqr8DNunZxZu-2c25o7dymeXq8DqU_Wh';
-                this.psaApiUrl = 'https://api.psacard.com/publicapi';
-                this.priceChartingCsvUrl = 'https://www.pricecharting.com/price-guide/download-custom?t=e8b39b271ff62d9572736d3a6e8e8050edb53704&category=pokemon-cards';
+        .dashboard-header h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #FFFFFF, var(--secondary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-                this.currentData = {
-                    sylveon: null,
-                    charizard: null,
-                    gengar: null,
-                    dragonite: null
-                };
+        .cert-input-section {
+            max-width: 1200px;
+            margin: 0 auto 3rem;
+        }
 
-                this.pikachuReactions = {
-                    start: "Pika Pika! Let's find some deals! ⚡",
-                    analyzing: "Pikachu! Analyzing data... 🔍",
-                    profit: "PIKACHUUU! Great profit opportunity! 💰",
-                    loss: "Pika... No good deals found 😔",
-                    error: "Pi-ka-chu? Something went wrong... ⚠️"
-                };
+        .input-card h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
 
-                this.init();
+        .input-card h3 i {
+            color: var(--accent-yellow);
+            margin-right: 0.75rem;
+        }
+
+        .cert-input-group {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .cert-input-group input {
+            flex: 1;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid var(--glass-border);
+            border-radius: 12px;
+            color: white;
+            font-size: 1.1rem;
+        }
+
+        .cert-input-group input:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+        }
+
+        .agent-chat-section {
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .chat-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .chat-header h3 {
+            font-size: 1.5rem;
+        }
+
+        .agent-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: var(--accent-green);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
             }
 
-            init() {
-                // Load Dragonite data on page load
-                this.dragoniteAgent();
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .chat-messages {
+            min-height: 300px;
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 3rem 0;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--glass-bg);
+            padding: 0.5rem;
+        }
+
+        .message-avatar img {
+            width: 100%;
+            height: 100%;
+        }
+
+        .message-content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .message-sender {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--secondary-purple);
+        }
+
+        .message-text {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .pikachu-container {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            text-align: center;
+        }
+
+        .pikachu-sprite {
+            width: 100px;
+            height: 100px;
+            image-rendering: pixelated;
+            animation: pikachuWalk 3s ease-in-out infinite;
+        }
+
+        @keyframes pikachuWalk {
+
+            0%,
+            100% {
+                transform: translateX(-200px);
             }
 
-            async startAnalysis(certNumber) {
-                if (!certNumber) {
-                    this.showPikachuReaction('error');
-                    alert('Please enter a valid CERT number');
-                    return;
-                }
+            50% {
+                transform: translateX(200px) scaleX(-1);
+            }
+        }
 
-                this.updateStatus('Analyzing...');
-                this.showPikachuReaction('start');
-                this.addChatMessage('System', 'Starting arbitrage analysis...', 25);
+        .pikachu-speech {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: #333;
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
 
-                // Run agents in sequence
-                await this.sylveonAgent(certNumber);
-                await this.delay(1000);
+        .pikachu-speech.show {
+            opacity: 1;
+        }
 
-                if (this.currentData.sylveon) {
-                    await this.charizardAgent();
-                    await this.delay(1000);
-                    await this.gengarAgent();
-                    await this.delay(1000);
+        .agents-grid-dashboard {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+            margin: 0 auto 3rem;
+            max-width: 1200px;
+        }
 
-                    this.showArbitrageResults();
-                }
+        @media (max-width: 1024px) {
+            .agents-grid-dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .agents-grid-dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .agent-dashboard-card {
+            background: var(--bg-card);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .agent-dashboard-card:hover {
+            border-color: var(--primary-purple);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-purple);
+        }
+
+        .agent-card-header {
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .agent-card-header img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 0.5rem;
+        }
+
+        .agent-card-header h4 {
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 0.25rem;
+        }
+
+        .agent-role {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem;
+        }
+
+        .agent-card-body {
+            padding: 1.5rem;
+            min-height: 200px;
+        }
+
+        .agent-waiting {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem 0;
+        }
+
+        .agent-waiting i {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .data-item {
+            margin-bottom: 1rem;
+        }
+
+        .data-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .data-value {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .comparison-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .comparison-card h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.3rem;
+        }
+
+        .profit-indicator {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 1rem;
+        }
+
+        .profit-positive {
+            color: var(--accent-green);
+        }
+
+        .profit-negative {
+            color: #EF4444;
+        }
+        
+        .nav-toggle {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 0 1rem;
             }
 
-            // ==================== 데이터 연동 1: Sylveon (PSA API) ====================
-            async sylveonAgent(certNumber) {
-                this.addChatMessage('Sylveon', 'Fetching PSA data for CERT ' + certNumber + '...', 700);
-
-                try {
-                    // Use local proxy server to avoid CORS issues
-                    const response = await fetch(`/api/psa/cert/${certNumber}`, {
-                        headers: {
-                            'Content-Type': 'application/json'
-                        }
-                    });
-
-                    if (!response.ok) {
-                        const errorText = await response.text();
-                        console.error('PSA Proxy Error:', response.status, errorText);
-                        throw new Error(`PSA Proxy request failed: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    console.log('PSA API Response:', data);
-
-                    // PSA API returns data in PSACert object
-                    const certData = data.PSACert || data;
-
-                    // Store data from actual PSA API response
-                    this.currentData.sylveon = {
-                        certNumber: certNumber,
-                        cardName: certData.Subject || certData.CardName || certData.Name || 'Unknown Card',
-                        series: certData.Brand || certData.Spec || certData.Series || 'Unknown Set',
-                        cardNumber: certData.CardNumber || certData.SpecNumber || 'N/A',
-                        grade: certData.GradeDescription || certData.OverallGrade || certData.Grade || 'N/A',
-                        population: certData.TotalPopulation || certData.Population || certData.Pop || 'N/A',
-                        year: certData.Year || ''
-                    };
-
-                    this.updateSylveonCard(this.currentData.sylveon);
-
-                    let message = `✅ Found: ${this.currentData.sylveon.cardName} - Grade ${this.currentData.sylveon.grade}`;
-                    if (this.currentData.sylveon.population !== 'N/A') {
-                        message += ` (Pop: ${this.currentData.sylveon.population})`;
-                    }
-                    if (this.currentData.sylveon.year) {
-                        message += ` [${this.currentData.sylveon.year}]`;
-                    }
-
-                    this.addChatMessage('Sylveon', message, 700);
-
-                } catch (error) {
-                    console.error('Sylveon Agent Error:', error);
-
-                    // Fallback to demo data if proxy server is not running
-                    this.currentData.sylveon = {
-                        certNumber: certNumber,
-                        cardName: 'Charizard 006/102',
-                        series: 'Base Set Unlimited',
-                        cardNumber: '006/102',
-                        grade: '10',
-                        population: '3,456'
-                    };
-
-                    this.updateSylveonCard(this.currentData.sylveon);
-                    this.addChatMessage('Sylveon',
-                        `⚠️ Proxy server not running. Using demo data: ${this.currentData.sylveon.cardName} - Grade ${this.currentData.sylveon.grade}. Start the server with: npm start`,
-                        700);
-                }
+            .nav-toggle {
+                display: flex;
+                flex-direction: column;
+                gap: 5px;
+                background: none;
+                border: none;
+                cursor: pointer;
+                padding: 0.5rem;
+                z-index: 1001;
             }
 
-            // ==================== 데이터 연동 2: Charizard (PriceCharting API) ====================
-            async charizardAgent() {
-                this.showPikachuReaction('analyzing');
-                this.addChatMessage('Charizard', 'Searching PriceCharting API for market pricing...', 6);
-
-                const cardInfo = this.currentData.sylveon;
-
-                try {
-                    // Build search query: Set + Card Name + Number
-                    const searchQuery = `${cardInfo.series} ${cardInfo.cardName} ${cardInfo.cardNumber}`.replace(/-/g, ' ').trim();
-                    const apiUrl = `https://www.pricecharting.com/api/products?q=${encodeURIComponent(searchQuery)}&t=e8b39b271ff62d9572736d3a6e8e8050edb53704`;
-
-                    console.log('[Charizard] API Search:');
-                    console.log(`  Query: "${searchQuery}"`);
-                    console.log(`  Looking for console-name: "${cardInfo.series}"`);
-
-                    const response = await fetch(apiUrl);
-
-                    if (!response.ok) {
-                        throw new Error(`API returned ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    console.log(`[Charizard] Found ${data.products ? data.products.length : 0} products`);
-
-                    if (!data.products || data.products.length === 0) {
-                        throw new Error('No products found');
-                    }
-
-                    // Filter by console-name (set name)
-                    const setNameLower = cardInfo.series.toLowerCase();
-                    const matchingProducts = data.products.filter(p =>
-                        p['console-name'] && p['console-name'].toLowerCase().includes(setNameLower)
-                    );
-
-                    console.log(`[Charizard] ${matchingProducts.length} products match console-name`);
-
-                    let product;
-                    if (matchingProducts.length > 0) {
-                        product = matchingProducts[0];
-                        console.log(`[Charizard] ✓ Match: ${product['product-name']}`);
-                    } else {
-                        // Fallback: use first result
-                        product = data.products[0];
-                        console.log(`[Charizard] Using first result: ${product['product-name']}`);
-                    }
-
-                    // Extract PSA 10 price (manual-only-price for Cards category)
-                    // IMPORTANT: PriceCharting returns prices in CENTS, must divide by 100
-                    const psa10_price = product['manual-only-price'];
-                    const graded_price = product['graded-price'];
-
-                    // Prioritize PSA 10 price if available and card is PSA 10
-                    let fmv;
-                    let source;
-
-                    if (cardInfo.grade && cardInfo.grade.includes('10') && psa10_price) {
-                        fmv = Math.round(parseFloat(psa10_price) / 100);  // Convert cents to dollars
-                        source = 'PriceCharting API (PSA 10)';
-                        console.log(`[Charizard] Using PSA 10 price: $${fmv} (raw: ${psa10_price} cents)`);
-                    } else if (graded_price) {
-                        fmv = Math.round(parseFloat(graded_price) / 100);  // Convert cents to dollars
-                        source = 'PriceCharting API (Graded)';
-                        console.log(`[Charizard] Using graded price: $${fmv} (raw: ${graded_price} cents)`);
-                    } else {
-                        throw new Error('No price data available');
-                    }
-
-                    // Generate recent sales with current dates
-                    const today = new Date();
-                    const daysAgo5 = new Date(today);
-                    daysAgo5.setDate(today.getDate() - 5);
-                    const daysAgo7 = new Date(today);
-                    daysAgo7.setDate(today.getDate() - 7);
-                    const daysAgo13 = new Date(today);
-                    daysAgo13.setDate(today.getDate() - 13);
-
-                    this.currentData.charizard = {
-                        fmv: fmv,
-                        recentSales: [
-                            { date: daysAgo5.toISOString().split('T')[0], price: Math.round(fmv * 0.96) },
-                            { date: daysAgo7.toISOString().split('T')[0], price: Math.round(fmv * 1.02) },
-                            { date: daysAgo13.toISOString().split('T')[0], price: Math.round(fmv * 0.99) }
-                        ],
-                        avgPrice: fmv,
-                        dataSource: source
-                    };
-
-                    this.updateCharizardCard(this.currentData.charizard);
-                    this.addChatMessage('Charizard',
-                        `Found ${product['product-name']}: $${fmv.toLocaleString()}`,
-                        6);
-
-                } catch (error) {
-                    console.error('[Charizard] Error:', error);
-
-                    // Fallback to estimated calculation
-                    const fmv = this.calculateMockFMV(cardInfo);
-
-                    // Generate recent sales with current dates
-                    const today = new Date();
-                    const daysAgo5 = new Date(today);
-                    daysAgo5.setDate(today.getDate() - 5);
-                    const daysAgo7 = new Date(today);
-                    daysAgo7.setDate(today.getDate() - 7);
-                    const daysAgo13 = new Date(today);
-                    daysAgo13.setDate(today.getDate() - 13);
-
-                    this.currentData.charizard = {
-                        fmv: fmv,
-                        recentSales: [
-                            { date: daysAgo5.toISOString().split('T')[0], price: fmv - 200 },
-                            { date: daysAgo7.toISOString().split('T')[0], price: fmv + 100 },
-                            { date: daysAgo13.toISOString().split('T')[0], price: fmv - 50 }
-                        ],
-                        avgPrice: fmv,
-                        dataSource: 'Estimated'
-                    };
-
-                    this.updateCharizardCard(this.currentData.charizard);
-                    this.addChatMessage('Charizard',
-                        `Using estimated FMV: $${fmv.toLocaleString()} (API unavailable)`,
-                        6);
-                }
+            .nav-toggle span {
+                display: block;
+                width: 24px;
+                height: 2px;
+                background: white;
+                border-radius: 2px;
+                transition: all 0.3s;
             }
 
-            // ==================== 데이터 연동 3: Gengar (SNKRDUNK API) ====================
-            async gengarAgent() {
-                this.addChatMessage('Gengar', 'Scanning SNKRDUNK for PSA10 listings...', 94);
+            .nav-menu {
+                display: none;
+                flex-direction: column;
+                position: fixed;
+                top: var(--nav-height);
+                left: 0;
+                right: 0;
+                background: rgba(10, 10, 15, 0.97);
+                padding: 1rem 2rem 2rem;
+                gap: 0.5rem;
+                border-bottom: 1px solid var(--glass-border);
+                z-index: 1000;
+            }
+            
+            .nav-menu.open {
+                display: flex;
+            }
+        }
 
-                const fmv = this.currentData.charizard.fmv;
-                const cardInfo = this.currentData.sylveon;
-
-                try {
-                    // Call SNKRDUNK Search API
-                    console.log('[Gengar] Calling SNKRDUNK Search API...');
-
-                    // Search by name for dynamic lookup
-                    const cardName = cardInfo ? cardInfo.cardName : 'Gengar';
-
-                    const searchParams = new URLSearchParams({
-                        name: cardName,
-                    });
-
-                    const response = await fetch(`/api/snkrdunk/search?${searchParams}`);
-
-                    if (!response.ok) {
-                        throw new Error(`SNKRDUNK API returned ${response.status}`);
-                    }
-
-                    const result = await response.json();
-                    console.log('[Gengar] SNKRDUNK Response:', result);
-
-                    if (!result.success) {
-                        throw new Error(result.error || 'No data from SNKRDUNK');
-                    }
-
-                    // Use the new response format
-                    const snkrPrice = result.latestPrice || fmv * 0.75; // Latest PSA 10 price in USD
-
-                    this.currentData.gengar = {
-                        latestSalePrice: snkrPrice,
-                        cheapestListing: snkrPrice,
-                        arbitrageOpportunity: fmv - snkrPrice,
-                        profitMargin: ((fmv - snkrPrice) / snkrPrice * 100).toFixed(2),
-                        listingsFound: result.psa10Listings || 0,
-                        dataSource: `SNKRDUNK (${result.cardTitle || 'Real-time'})`
-                    };
-
-                    this.updateGengarCard(this.currentData.gengar);
-
-                    if (this.currentData.gengar.arbitrageOpportunity > 0) {
-                        this.showPikachuReaction('profit');
-                        this.addChatMessage('Gengar',
-                            `Found ${result.psa10Listings} PSA 10 listings! Latest: $${snkrPrice}. Potential profit: $${this.currentData.gengar.arbitrageOpportunity.toLocaleString()} (${this.currentData.gengar.profitMargin}%)`,
-                            94);
-                    } else {
-                        this.showPikachuReaction('loss');
-                        this.addChatMessage('Gengar',
-                            `Found ${result.psa10Listings} PSA 10 listings at $${snkrPrice}, but no profitable arbitrage at this time`,
-                            94);
-                    }
-
-                } catch (error) {
-                    console.error('[Gengar] Error:', error);
-
-                    // Fallback to mock data if scraper fails
-                    this.addChatMessage('Gengar', '⚠️ SNKRDUNK scraper unavailable, using estimated data...', 94);
-
-                    const snkrPrice = fmv * 0.75; // Assume 25% cheaper
-
-                    this.currentData.gengar = {
-                        latestSalePrice: snkrPrice - 100,
-                        cheapestListing: snkrPrice,
-                        arbitrageOpportunity: fmv - snkrPrice,
-                        profitMargin: ((fmv - snkrPrice) / snkrPrice * 100).toFixed(2),
-                        dataSource: 'Estimated (Scraper offline)'
-                    };
-
-                    this.updateGengarCard(this.currentData.gengar);
-
-                    if (this.currentData.gengar.arbitrageOpportunity > 0) {
-                        this.showPikachuReaction('profit');
-                        this.addChatMessage('Gengar',
-                            `Estimated profit: $${this.currentData.gengar.arbitrageOpportunity.toLocaleString()} (${this.currentData.gengar.profitMargin}%)`,
-                            94);
-                    } else {
-                        this.showPikachuReaction('loss');
-                    }
-                }
+        @media (max-width: 600px) {
+            .cert-input-group {
+                flex-direction: column;
+            }
+            
+            .cert-input-group input {
+                width: 100%;
             }
 
-            // ==================== 데이터 연동 4: Dragonite (환율/암호화폐 API) ====================
-            async dragoniteAgent() {
-                try {
-                    // Fetch real exchange rates
-                    const usdJpy = await this.fetchExchangeRate();
-                    const btc = await this.fetchCryptoPrice('bitcoin');
-                    const eth = await this.fetchCryptoPrice('ethereum');
-
-                    this.currentData.dragonite = {
-                        usdJpy: usdJpy,
-                        btc: btc,
-                        eth: eth,
-                        lastUpdate: new Date().toLocaleString()
-                    };
-
-                    this.updateDragoniteCard(this.currentData.dragonite);
-
-                } catch (error) {
-                    console.error('Dragonite Agent Error:', error);
-                    // Use mock data if API fails
-                    this.currentData.dragonite = {
-                        usdJpy: 149.25,
-                        btc: 45000,
-                        eth: 2400,
-                        lastUpdate: new Date().toLocaleString()
-                    };
-                    this.updateDragoniteCard(this.currentData.dragonite);
-                }
+            .cert-input-group button {
+                width: 100%;
             }
+        }
+        
+    </style>
 
-            async fetchExchangeRate() {
-                try {
-                    const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
-                    const data = await response.json();
-                    return data.rates.JPY;
-                } catch {
-                    return 149.25;
-                }
-            }
+    <script type="module" src="assets/config.js"></script>
+    <script src="assets/wallet.js"></script>
+    <script src="assets/agents.js"></script>
+</body>
 
-            async fetchCryptoPrice(crypto) {
-                try {
-                    const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${crypto}&vs_currencies=usd`);
-                    const data = await response.json();
-                    return data[crypto].usd;
-                } catch {
-                    return crypto === 'bitcoin' ? 45000 : 2400;
-                }
-            }
-
-            // UI Update Functions
-            updateSylveonCard(data) {
-                const card = document.getElementById('sylveonData');
-
-                let html = `
-                    <div class="data-item">
-                        <div class="data-label">Card Name</div>
-                        <div class="data-value">${data.cardName}</div>
-                    </div>
-                    <div class="data-item">
-                        <div class="data-label">Set</div>
-                        <div class="data-value">${data.series}</div>
-                    </div>`;
-
-                if (data.year) {
-                    html += `
-                    <div class="data-item">
-                        <div class="data-label">Year</div>
-                        <div class="data-value">${data.year}</div>
-                    </div>`;
-                }
-
-                html += `
-                    <div class="data-item">
-                        <div class="data-label">Card Number</div>
-                        <div class="data-value">${data.cardNumber}</div>
-                    </div>
-                    <div class="data-item">
-                        <div class="data-label">Grade</div>
-                        <div class=
+</html>
