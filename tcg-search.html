@@ -44,7 +44,7 @@
                             class="dropdown-item">How to buy</a>
                         <a href="utility.html" class="dropdown-item">Utility</a>
                         <a href="#" class="dropdown-item" style="opacity: 0.6; cursor: not-allowed;">
-                             Coming soon <span style="font-size: 0.6rem; vertical-align: middle;">⏳</span>
+                            Coming soon <span style="font-size: 0.6rem; vertical-align: middle;">⏳</span>
                         </a>
                     </div>
                 </li>
@@ -297,7 +297,7 @@
                 console.log('Fetching cards for:', input);
 
                 // Use a CORS proxy to bypass restrictions on production
-                const proxyUrl = 'https://corsproxy.io/?';
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const targetUrl = encodeURIComponent(`${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`);
                 const url = proxyUrl + targetUrl;
 
@@ -364,7 +364,7 @@
             loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
             try {
-                const proxyUrl = 'https://corsproxy.io/?';
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const targetUrl = encodeURIComponent(`${TCG_API}/cards?q=name:${currentQuery}*&page=${currentPage}&pageSize=${PAGE_SIZE}`);
                 const url = proxyUrl + targetUrl;
 
