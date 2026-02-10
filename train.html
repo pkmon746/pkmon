@@ -289,7 +289,6 @@
             line-height: 1.6;
         }
 
-        /* 변경 */
         .agents-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -297,6 +296,24 @@
             max-width: 1280px;
             margin-left: auto;
             margin-right: auto;
+        }
+
+        @media (max-width: 1024px) {
+            .agents-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .features-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .agents-grid {
+                grid-template-columns: 1fr;
+            }
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
         }
         
 
