@@ -281,14 +281,19 @@
             }
 
             try {
+                // Fetch basic Pokemon data
                 const response = await fetch(`${POKEMON_API}/pokemon/${input}`);
+                if (!response.ok) throw new Error('Pokémon not found');
+                const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error('Pokémon not found');
+                // Fetch Pokemon Species data (for description and genus)
+                const speciesResponse = await fetch(`${POKEMON_API}/pokemon-species/${data.id}`); // Use ID for accuracy
+                let speciesData = null;
+                if (speciesResponse.ok) {
+                    speciesData = await speciesResponse.json();
                 }
 
-                const data = await response.json();
-                displayPokemon(data);
+                displayPokemon(data, speciesData);
             } catch (error) {
                 document.getElementById('pokemonResult').innerHTML = `
                     <div class="pokemon-card" style="background: rgba(239, 68, 68, 0.1); border-color: #EF4444;">
@@ -299,7 +304,7 @@
             }
         }
 
-        function displayPokemon(data) {
+        function displayPokemon(data, speciesData) {
             const types = data.types.map(t => t.type.name);
             const typeColors = {
                 normal: '#A8A878', fire: '#F08030', water: '#6890F0',
@@ -310,15 +315,41 @@
                 dark: '#705848', steel: '#B8B8D0', fairy: '#EE99AC'
             };
 
+            // Extract description (flavor text)
+            let description = "No description available.";
+            let genus = "";
+
+            if (speciesData) {
+                // Find first English flavor text
+                const flavorEntry = speciesData.flavor_text_entries.find(entry => entry.language.name === 'en');
+                if (flavorEntry) {
+                    // Clean up text (replace form feeds and newlines with spaces)
+                    description = flavorEntry.flavor_text.replace(/[\f\n\r]/g, ' ');
+                }
+
+                // Find English genus (e.g., "Seed Pokémon")
+                const genusEntry = speciesData.genera.find(entry => entry.language.name === 'en');
+                if (genusEntry) {
+                    genus = genusEntry.genus;
+                }
+            }
+
             const html = `
                 <div class="pokemon-card fade-in">
                     <img src="${data.sprites.other['official-artwork'].front_default}" alt="${data.name}">
                     <h2 class="pokemon-name">${data.name}</h2>
+                    ${genus ? `<div style="color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">${genus}</div>` : ''}
+                    
                     <div class="pokemon-types">
                         ${types.map(type => `
                             <span class="type-badge" style="background: ${typeColors[type]};">${type}</span>
                         `).join('')}
                     </div>
+                    
+                    <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; margin: 1.5rem 0; line-height: 1.6; color: #ddd; border-left: 3px solid var(--primary-purple);">
+                        "${description}"
+                    </div>
+                    
                     <div class="pokemon-stats">
                         <div class="stat-item">
                             <div class="stat-label">Height</div>
