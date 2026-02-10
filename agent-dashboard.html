@@ -115,11 +115,11 @@
                     </div>
                 </div>
 
-                <!-- Animated Pikachu -->
+                <!-- Animated Pikachu Helper -->
                 <div class="pikachu-container" id="pikachuContainer">
-                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/25.gif"
+                    <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png"
                         alt="Pikachu" id="pikachuSprite" class="pikachu-sprite">
-                    <div class="pikachu-speech" id="pikachuSpeech"></div>
+                    <div class="pikachu-speech" id="pikachuSpeech">Pika! Ready to help!</div>
                 </div>
             </div>
 
@@ -353,29 +353,32 @@
 
         .pikachu-container {
             position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            text-align: center;
+            /* Start position (will be updated by JS) */
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            pointer-events: none;
+            /* Allows clicking through */
+            transition: transform 0.1s ease-out;
         }
 
         .pikachu-sprite {
-            width: 100px;
-            height: 100px;
-            image-rendering: pixelated;
-            animation: pikachuWalk 3s ease-in-out infinite;
+            width: 120px;
+            /* Slightly larger for official artwork */
+            height: 120px;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+            animation: float 3s ease-in-out infinite;
         }
 
-        @keyframes pikachuWalk {
+        @keyframes float {
 
             0%,
             100% {
-                transform: translateX(-200px);
+                transform: translateY(0);
             }
 
             50% {
-                transform: translateX(200px) scaleX(-1);
+                transform: translateY(-10px);
             }
         }
 
@@ -588,6 +591,88 @@
     <script type="module" src="assets/config.js"></script>
     <script src="assets/wallet.js"></script>
     <script src="assets/agents.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pikachu = document.getElementById('pikachuContainer');
+            const speech = document.getElementById('pikachuSpeech');
+            const sprite = document.getElementById('pikachuSprite');
+
+            // Initial position logic (bottom right)
+            let currentX = window.innerWidth - 150;
+            let currentY = window.innerHeight - 150;
+            let targetX = currentX;
+            let targetY = currentY;
+
+            // Mouse follow logic with smooth delay
+            document.addEventListener('mousemove', (e) => {
+                // Target position: slightly offset from cursor
+                targetX = e.clientX + 20;
+                targetY = e.clientY + 20;
+
+                // Flip sprite based on direction
+                if (targetX < currentX) {
+                    sprite.style.transform = 'scaleX(1)'; // Face left ? (Standard image faces left)
+                    // Official artwork faces left by default.
+                    // If moving left (targetX < current), keep default (scaleX(1)).
+                    // If moving right (targetX > current), flip (scaleX(-1)).
+                    sprite.style.transform = 'scaleX(1)';
+                } else {
+                    sprite.style.transform = 'scaleX(-1)';
+                }
+            });
+
+            // Smooth animation loop
+            function animate() {
+                // Lerp for smooth movement (0.1 = speed)
+                currentX += (targetX - currentX) * 0.1;
+                currentY += (targetY - currentY) * 0.1;
+
+                pikachu.style.left = `${currentX}px`;
+                pikachu.style.top = `${currentY}px`;
+
+                // Clear bottom/right from CSS
+                pikachu.style.bottom = 'auto';
+                pikachu.style.right = 'auto';
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            // Random Speech Logic
+            const phrases = [
+                "Pika Pika! (Check the Chart!)",
+                "Need help? Ask the agents!",
+                "Arbitrage opportunities located!",
+                "Gengar is watching...",
+                "Prices updated!",
+                "Charizard is calculating hot deals!",
+                "Sylveon is scanning data...",
+                "Pika! (Click Start!)",
+                "Don't forget to connect wallet!",
+                "Dragonite is checking rates!",
+                "Pika... chu!",
+                "Market is volatile today!"
+            ];
+
+            function speak() {
+                const text = phrases[Math.floor(Math.random() * phrases.length)];
+                speech.textContent = text;
+                speech.classList.add('show');
+
+                // Hide after 3 seconds
+                setTimeout(() => {
+                    speech.classList.remove('show');
+                }, 3000);
+
+                // Schedule next speech (5-10 seconds)
+                const nextTime = Math.random() * 5000 + 5000;
+                setTimeout(speak, nextTime);
+            }
+
+            // Start speaking after initial delay
+            setTimeout(speak, 2000);
+        });
+    </script>
 </body>
 
 </html>
