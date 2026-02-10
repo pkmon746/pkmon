@@ -19,7 +19,8 @@
                 <span>PKMONAD</span>
             </a>
 
-            <button class="nav-toggle" id="navToggle" onclick="this.classList.toggle('active'); document.querySelector('.nav-menu').classList.toggle('open')">
+            <button class="nav-toggle" id="navToggle"
+                onclick="this.classList.toggle('active'); document.querySelector('.nav-menu').classList.toggle('open')">
                 <span></span><span></span><span></span>
             </button>
 
@@ -36,6 +37,9 @@
                 </li>
                 <li class="nav-item">
                     <a href="train.html" class="nav-link">Train</a>
+                </li>
+                <li class="nav-item">
+                    <a href="battle.html" class="nav-link">Battle</a>
                 </li>
                 <li class="nav-item">
                     <a href="#" class="nav-link">
@@ -407,7 +411,7 @@
                 grid-template-columns: repeat(2, 1fr);
             }
         }
-        
+
         @media (max-width: 600px) {
             .agents-grid-dashboard {
                 grid-template-columns: 1fr;
@@ -515,11 +519,11 @@
         .profit-negative {
             color: #EF4444;
         }
-        
+
         .nav-toggle {
             display: none;
         }
-        
+
         @media (max-width: 768px) {
             .navbar {
                 padding: 0 1rem;
@@ -558,7 +562,7 @@
                 border-bottom: 1px solid var(--glass-border);
                 z-index: 1000;
             }
-            
+
             .nav-menu.open {
                 display: flex;
             }
@@ -568,7 +572,7 @@
             .cert-input-group {
                 flex-direction: column;
             }
-            
+
             .cert-input-group input {
                 width: 100%;
             }
@@ -577,7 +581,6 @@
                 width: 100%;
             }
         }
-        
     </style>
 
     <script type="module" src="assets/config.js"></script>
