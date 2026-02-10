@@ -83,6 +83,10 @@
                 </div>
             </div>
 
+            <!-- Results Info -->
+            <div id="resultsInfo"
+                style="display: none; text-align: center; margin: 1rem 0; color: var(--text-secondary);"></div>
+
             <!-- Loading Indicator -->
             <div id="loadingIndicator" style="display: none; text-align: center; margin: 3rem 0;">
                 <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: var(--primary-purple);"></i>
@@ -91,6 +95,13 @@
 
             <!-- TCG Results -->
             <div id="tcgResults" class="tcg-grid"></div>
+
+            <!-- Load More Button -->
+            <div id="loadMoreContainer" style="display: none; text-align: center; margin: 2rem 0;">
+                <button class="btn-search" onclick="loadMoreCards()" id="loadMoreBtn">
+                    Load More Cards <i class="fas fa-chevron-down"></i>
+                </button>
+            </div>
         </div>
     </section>
 
@@ -101,11 +112,13 @@
         }
 
         .page-header h1 {
-            font-size: 3.5rem;
+            font-size: 3rem;
             margin-bottom: 1rem;
-            background: linear-gradient(135deg, #FFFFFF, var(--secondary-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+        }
+
+        .page-header p {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
         }
 
         .search-container {
@@ -116,21 +129,16 @@
         .search-box {
             display: flex;
             align-items: center;
-            gap: 1rem;
             background: var(--glass-bg);
-            border: 2px solid var(--glass-border);
-            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50px;
             padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-box:focus-within {
-            border-color: var(--primary-purple);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+            gap: 1rem;
         }
 
         .search-box i {
-            color: var(--text-muted);
+            color: var(--primary-purple);
             font-size: 1.2rem;
         }
 
@@ -138,62 +146,92 @@
             flex: 1;
             background: transparent;
             border: none;
-            padding: 0.75rem 0;
-            color: var(--text-primary);
+            color: white;
             font-size: 1rem;
-        }
-
-        .search-box input:focus {
+            padding: 0.75rem;
             outline: none;
-            box-shadow: none;
         }
 
         .btn-search {
-            padding: 0.75rem 2rem;
-            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-pink));
             color: white;
-            border-radius: 10px;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 50px;
             font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-search:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(157, 78, 221, 0.3);
         }
 
         .tcg-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 2rem;
+            margin-top: 2rem;
         }
 
         .tcg-card {
-            background: var(--bg-card);
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
             border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s;
             cursor: pointer;
+            opacity: 0;
+            animation: fadeInUp 0.5s forwards;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .tcg-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
             border-color: var(--primary-purple);
-            transform: translateY(-10px);
-            box-shadow: var(--shadow-purple);
         }
 
         .tcg-card-image {
             width: 100%;
-            aspect-ratio: 2/3;
+            height: auto;
+            display: block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 200px;
             object-fit: contain;
-            border-radius: 12px;
-            margin-bottom: 1rem;
+        }
+
+        .tcg-card-info {
+            padding: 1.5rem;
         }
 
         .tcg-card-info h3 {
             font-size: 1.3rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent-yellow);
         }
 
         .tcg-card-details {
             color: var(--text-secondary);
             font-size: 0.9rem;
             line-height: 1.8;
+        }
+
+        .tcg-card-details div {
+            margin-bottom: 0.5rem;
         }
 
         .tcg-card-price {
@@ -215,11 +253,21 @@
             font-weight: 700;
             color: var(--accent-green);
         }
+
+        /* Lazy load placeholder */
+        .tcg-card-image[data-src] {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
     </style>
 
     <script src="assets/wallet.js"></script>
     <script>
         const TCG_API = 'https://api.pokemontcg.io/v2';
+        // Note: API works without key for basic usage, avoiding CORS issues
+        let currentPage = 1;
+        let currentQuery = '';
+        let totalCards = 0;
+        const PAGE_SIZE = 24; // Increased from 20
 
         async function searchTCG() {
             const input = document.getElementById('tcgSearch').value.toLowerCase().trim();
@@ -229,21 +277,40 @@
                 return;
             }
 
+            // Reset pagination
+            currentPage = 1;
+            currentQuery = input;
+
             const resultsDiv = document.getElementById('tcgResults');
             const loadingDiv = document.getElementById('loadingIndicator');
+            const resultsInfo = document.getElementById('resultsInfo');
 
             resultsDiv.innerHTML = '';
             loadingDiv.style.display = 'block';
+            resultsInfo.style.display = 'none';
+            document.getElementById('loadMoreContainer').style.display = 'none';
 
             try {
-                const response = await fetch(`${TCG_API}/cards?q=name:${input}*&pageSize=20`);
+                console.log('Fetching cards for:', input);
+                const url = `${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
+                console.log('URL:', url);
+
+                // Don't use custom headers - causes CORS preflight issues
+                const response = await fetch(url);
+
+                console.log('Response status:', response.status);
 
                 if (!response.ok) {
-                    throw new Error('Failed to fetch cards');
+                    const errorText = await response.text();
+                    console.error('API Error:', errorText);
+                    throw new Error(`API returned ${response.status}: ${errorText}`);
                 }
 
                 const data = await response.json();
+                console.log('Data received:', data.data.length, 'cards');
                 loadingDiv.style.display = 'none';
+
+                totalCards = data.totalCount;
 
                 if (data.data.length === 0) {
                     resultsDiv.innerHTML = `
@@ -255,24 +322,75 @@
                     return;
                 }
 
+                // Show results info
+                resultsInfo.style.display = 'block';
+                resultsInfo.textContent = `Found ${totalCards} cards for "${input}"`;
+
                 displayTCGCards(data.data);
+
+                // Show load more button if there are more cards
+                if (data.data.length < totalCards) {
+                    document.getElementById('loadMoreContainer').style.display = 'block';
+                }
             } catch (error) {
+                console.error('Search error:', error);
                 loadingDiv.style.display = 'none';
                 resultsDiv.innerHTML = `
                     <div style="grid-column: 1/-1; text-align: center; padding: 3rem;">
                         <h2 style="color: #EF4444;">Error loading cards</h2>
                         <p style="color: var(--text-muted);">${error.message}</p>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 1rem;">
+                            Check browser console (F12) for more details
+                        </p>
                     </div>
                 `;
+            }
+        }
+
+        async function loadMoreCards() {
+            if (!currentQuery) return;
+
+            currentPage++;
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            loadMoreBtn.disabled = true;
+            loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+
+            try {
+                const url = `${TCG_API}/cards?q=name:${currentQuery}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
+                // Don't use custom headers - causes CORS issues
+                const response = await fetch(url);
+
+                if (!response.ok) {
+                    throw new Error(`Failed to load more cards (${response.status})`);
+                }
+
+                const data = await response.json();
+
+                displayTCGCards(data.data);
+
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.innerHTML = 'Load More Cards <i class="fas fa-chevron-down"></i>';
+
+                // Hide button if no more cards
+                const displayedCards = document.querySelectorAll('.tcg-card').length;
+                if (displayedCards >= totalCards) {
+                    document.getElementById('loadMoreContainer').style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Load more error:', error);
+                loadMoreBtn.disabled = false;
+                loadMoreBtn.innerHTML = 'Load More Cards <i class="fas fa-chevron-down"></i>';
+                alert('Failed to load more cards: ' + error.message);
             }
         }
 
         function displayTCGCards(cards) {
             const resultsDiv = document.getElementById('tcgResults');
 
-            cards.forEach(card => {
+            cards.forEach((card, index) => {
                 const cardDiv = document.createElement('div');
-                cardDiv.className = 'tcg-card fade-in';
+                cardDiv.className = 'tcg-card';
+                cardDiv.style.animationDelay = `${index * 0.05}s`;
 
                 const price = card.cardmarket?.prices?.averageSellPrice ||
                     card.tcgplayer?.prices?.holofoil?.market ||
@@ -280,7 +398,7 @@
                     'N/A';
 
                 cardDiv.innerHTML = `
-                    <img src="${card.images.small}" alt="${card.name}" class="tcg-card-image">
+                    <img data-src="${card.images.small}" alt="${card.name}" class="tcg-card-image lazy-load">
                     <div class="tcg-card-info">
                         <h3>${card.name}</h3>
                         <div class="tcg-card-details">
@@ -301,6 +419,28 @@
 
                 resultsDiv.appendChild(cardDiv);
             });
+
+            // Trigger lazy loading for new images
+            lazyLoadImages();
+        }
+
+        // Lazy loading implementation
+        function lazyLoadImages() {
+            const images = document.querySelectorAll('img.lazy-load[data-src]');
+
+            const imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                        img.classList.remove('lazy-load');
+                        observer.unobserve(img);
+                    }
+                });
+            });
+
+            images.forEach(img => imageObserver.observe(img));
         }
 
         // Enter key support
