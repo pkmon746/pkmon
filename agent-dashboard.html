@@ -400,6 +400,18 @@
             margin-right: auto; 
         }
 
+        @media (max-width: 1024px) {
+            .agents-grid-dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .agents-grid-dashboard {
+                grid-template-columns: 1fr;
+            }
+        }
+
         .agent-dashboard-card {
             background: var(--bg-card);
             border: 1px solid var(--glass-border);
