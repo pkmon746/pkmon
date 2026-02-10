@@ -292,7 +292,12 @@
 
             try {
                 console.log('Fetching cards for:', input);
-                const url = `${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
+
+                // Use a CORS proxy to bypass restrictions on production
+                const proxyUrl = 'https://corsproxy.io/?';
+                const targetUrl = encodeURIComponent(`${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`);
+                const url = proxyUrl + targetUrl;
+
                 console.log('URL:', url);
 
                 // Don't use custom headers - causes CORS preflight issues
