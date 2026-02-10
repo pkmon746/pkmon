@@ -273,23 +273,46 @@
         const PAGE_SIZE = 24; // Increased from 20
 
         // List of CORS proxies to try in order
+        // 'json_wrapper' type is used for allorigins.win/get which returns JSON with a 'contents' string
+        // 'raw' type is for standard pass-through proxies
         const PROXY_LIST = [
-            'https://api.codetabs.com/v1/proxy?quest=',
-            'https://api.allorigins.win/raw?url=',
-            'https://corsproxy.io/?'
+            { url: 'https://api.allorigins.win/get?url=', type: 'json_wrapper' },
+            { url: 'https://thingproxy.freeboard.io/fetch/', type: 'raw' },
+            { url: 'https://api.codetabs.com/v1/proxy?quest=', type: 'raw' },
+            { url: 'https://corsproxy.io/?', type: 'raw' }
         ];
 
         async function fetchWithFallback(targetUrl) {
             let lastError;
             for (const proxy of PROXY_LIST) {
                 try {
-                    const url = proxy + encodeURIComponent(targetUrl);
-                    console.log(`Trying proxy: ${proxy}`);
+                    const url = proxy.url + encodeURIComponent(targetUrl);
+                    console.log(`Trying proxy: ${proxy.url}`);
+
                     const response = await fetch(url);
-                    if (response.ok) return response;
-                    console.warn(`Proxy ${proxy} failed: ${response.status}`);
+                    if (!response.ok) {
+                        console.warn(`Proxy ${proxy.url} failed: ${response.status}`);
+                        continue;
+                    }
+
+                    // Handle standard raw proxies
+                    if (proxy.type === 'raw') {
+                        return await response.json();
+                    }
+
+                    // Handle AllOrigins JSON wrapper
+                    if (proxy.type === 'json_wrapper') {
+                        const wrapperData = await response.json();
+                        if (wrapperData.contents) {
+                            // Parse the actual API response string contained in 'contents'
+                            return JSON.parse(wrapperData.contents);
+                        } else {
+                            throw new Error('Invalid wrapper response');
+                        }
+                    }
+
                 } catch (error) {
-                    console.warn(`Proxy ${proxy} error:`, error);
+                    console.warn(`Proxy ${proxy.url} error:`, error);
                     lastError = error;
                 }
             }
@@ -322,18 +345,9 @@
 
                 const targetUrl = `${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
 
-                // Use fallback fetch
-                const response = await fetchWithFallback(targetUrl);
+                // fetchWithFallback now returns the parsed JSON data directly
+                const data = await fetchWithFallback(targetUrl);
 
-                console.log('Response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('API Error:', errorText);
-                    throw new Error(`API returned ${response.status}: ${errorText}`);
-                }
-
-                const data = await response.json();
                 console.log('Data received:', data.data.length, 'cards');
                 loadingDiv.style.display = 'none';
 
@@ -386,9 +400,8 @@
                 const targetUrl = `${TCG_API}/cards?q=name:${currentQuery}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
 
                 // Use fallback fetch
-                const response = await fetchWithFallback(targetUrl);
-
-                const data = await response.json();
+                // fetchWithFallback now returns the parsed JSON data directly
+                const data = await fetchWithFallback(targetUrl);
 
                 displayTCGCards(data.data);
 
