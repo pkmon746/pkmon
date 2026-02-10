@@ -565,6 +565,18 @@
             .nav-menu.open {
                 display: flex;
             }
+
+
+            .nav-menu {
+                max-height: calc(100vh - var(--nav-height));
+                overflow-y: auto;  /* ← 메뉴가 화면 넘치면 스크롤 */
+            }
+            
+            .btn-start, .btn-wallet {
+                width: 100%;
+                text-align: center;
+                box-sizing: border-box;  /* ← START, Connect Wallet 같은 너비 */
+            }
         }
 
         @media (max-width: 600px) {
