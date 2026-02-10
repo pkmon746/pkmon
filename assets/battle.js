@@ -38,7 +38,10 @@ class BattleEngine {
         setInterval(() => this.tick(), 1000);
 
         // Start Chat Simulation (increased frequency)
-        setInterval(() => this.processChat(), 3000); // More frequent chat
+        setInterval(() => this.processChat(), 3000);
+
+        // Start Betting Simulation
+        setInterval(() => this.simulateBetting(), 2500);
 
         // Initial setup
         this.startNewCycle();
@@ -68,6 +71,56 @@ class BattleEngine {
         this.log(`⚔️ MATCHUP: ${this.teamA[0].name} vs ${this.teamB[0].name}`);
         this.triggerChat('matchup', {});
         this.triggerChat('idle', {});
+    }
+
+    simulateBetting() {
+        if (this.gameState !== 'BETTING') return;
+
+        // 50% chance to skip a tick for randomness
+        if (Math.random() > 0.6) return;
+
+        const fakeUsers = [
+            "AshLover99", "TeamRocket_Grunt", "MistyWater", "Brock_Solid", "GaryOak_Official",
+            "PokeFan_KR", "Satoshi_JP", "Red_Champion", "Blue_Rival", "Prof_Oak",
+            "Nurse_Joy_Fan", "Officer_Jenny", "Eevee_Cute", "Pika_Pika", "Mewtwo_Strikes",
+            "Gengar_Ghost", "Dragonite_Fly", "Snorlax_Sleep", "Jiggly_Sing", "Psyduck_Confused",
+            "Crypto_Whale", "Doge_Coin", "Shiba_Inu", "Pepe_Frog", "Wojak_Trader"
+        ];
+
+        const randomUser = fakeUsers[Math.floor(Math.random() * fakeUsers.length)];
+        const teams = ['A', 'B'];
+        const randomTeam = teams[Math.floor(Math.random() * teams.length)];
+
+        // Random bet amount (weighted towards smaller bets)
+        let amount;
+        const rand = Math.random();
+        if (rand > 0.95) amount = Math.floor(Math.random() * 5000) + 1000; // Whale bet
+        else if (rand > 0.8) amount = Math.floor(Math.random() * 1000) + 500; // Big bet
+        else amount = Math.floor(Math.random() * 400) + 10; // Small bet
+
+        // Round to 10
+        amount = Math.ceil(amount / 10) * 10;
+
+        // Update internal state
+        this.bets[randomTeam] += amount;
+        this.updatePoolDisplay();
+
+        // 30% chance to show in log to avoid spam
+        if (Math.random() > 0.7) {
+            const teamColor = randomTeam === 'A' ? 'var(--accent-blue)' : '#EF4444';
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #bbb">${randomUser}</span> bet <span style="color: var(--accent-yellow)">${amount} PKMON</span> on <span style="color: ${teamColor}">Team ${randomTeam}</span>`;
+            logEntry.style.fontSize = '0.8rem';
+            logEntry.style.padding = '2px 0';
+            logEntry.style.opacity = '0.8';
+
+            this.elements.log.appendChild(logEntry);
+            this.elements.log.scrollTop = this.elements.log.scrollHeight;
+        }
+
+        // Flash the pool display
+        this.elements.pool.style.color = '#fff';
+        setTimeout(() => this.elements.pool.style.color = 'var(--accent-yellow)', 200);
     }
 
     async fetchTeams() {
@@ -364,6 +417,7 @@ class BattleEngine {
     }
 
     updatePoolDisplay() {
+        // Only valid bets
         const total = this.bets.A + this.bets.B;
         this.elements.pool.textContent = total.toFixed(2);
     }
