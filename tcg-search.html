@@ -276,18 +276,17 @@
         // 'json_wrapper' type is used for allorigins.win/get which returns JSON with a 'contents' string
         // 'raw' type is for standard pass-through proxies
         const PROXY_LIST = [
-            { url: 'https://api.allorigins.win/get?url=', type: 'json_wrapper' },
-            { url: 'https://corsproxy.org/api.php?url=', type: 'raw' },
             { url: 'https://api.codetabs.com/v1/proxy?quest=', type: 'raw' },
+            { url: 'https://corsproxy.org/api.php?url=', type: 'raw' },
+            { url: 'https://api.allorigins.win/get?url=', type: 'json_wrapper' },
             { url: 'https://corsproxy.io/?', type: 'raw' }
         ];
 
         async function fetchWithFallback(targetUrl) {
             let lastError;
 
-            // Ensure strict encoding for proxies that might choke on special chars like '*'
-            // encodeURIComponent leaves '*' alone, but some proxies (like CodeTabs) might need it encoded
-            const encodedTarget = encodeURIComponent(targetUrl).replace(/\*/g, '%2A');
+            // Simple encoding now that wildcard is removed
+            const encodedTarget = encodeURIComponent(targetUrl);
 
             for (const proxy of PROXY_LIST) {
                 try {
@@ -362,7 +361,7 @@
             try {
                 console.log('Fetching cards for:', input);
 
-                const targetUrl = `${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
+                const targetUrl = `${TCG_API}/cards?q=name:${input}&page=${currentPage}&pageSize=${PAGE_SIZE}`;
 
                 // fetchWithFallback now returns the parsed JSON data directly
                 const data = await fetchWithFallback(targetUrl);
@@ -416,7 +415,7 @@
             loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
             try {
-                const targetUrl = `${TCG_API}/cards?q=name:${currentQuery}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
+                const targetUrl = `${TCG_API}/cards?q=name:${currentQuery}&page=${currentPage}&pageSize=${PAGE_SIZE}`;
 
                 // Use fallback fetch
                 // fetchWithFallback now returns the parsed JSON data directly
