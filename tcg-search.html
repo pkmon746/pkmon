@@ -296,8 +296,8 @@
             try {
                 console.log('Fetching cards for:', input);
 
-                // Use a CORS proxy to bypass restrictions on production
-                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                // Use CodeTabs CORS proxy as fallback
+                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
                 const targetUrl = encodeURIComponent(`${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`);
                 const url = proxyUrl + targetUrl;
 
@@ -364,7 +364,7 @@
             loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
             try {
-                const proxyUrl = 'https://api.allorigins.win/raw?url=';
+                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
                 const targetUrl = encodeURIComponent(`${TCG_API}/cards?q=name:${currentQuery}*&page=${currentPage}&pageSize=${PAGE_SIZE}`);
                 const url = proxyUrl + targetUrl;
 
