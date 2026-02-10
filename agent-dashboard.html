@@ -60,9 +60,8 @@
                         <a href="https://t.me/pkmonad" target="_blank" class="dropdown-item">Telegram</a>
                     </div>
                 </li>
-                <li class="nav-item">
-                    <a href="agent-dashboard.html" class="nav-link btn-start active">START</a>
-                </li>
+                <a href="agent-dashboard.html" class="nav-link btn-start active"
+                    onclick="event.preventDefault(); window.scrollTo({top:0, behavior:'smooth'}); if(window.innerWidth <= 768) { document.querySelector('.nav-toggle').click(); }">START</a>
                 <li class="nav-item">
                     <button class="btn-wallet" id="connectWalletBtn">
                         <i class="fas fa-wallet"></i> Connect Wallet
