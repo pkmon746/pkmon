@@ -277,19 +277,28 @@
         // 'raw' type is for standard pass-through proxies
         const PROXY_LIST = [
             { url: 'https://api.allorigins.win/get?url=', type: 'json_wrapper' },
-            { url: 'https://thingproxy.freeboard.io/fetch/', type: 'raw' },
+            { url: 'https://corsproxy.org/api.php?url=', type: 'raw' },
             { url: 'https://api.codetabs.com/v1/proxy?quest=', type: 'raw' },
             { url: 'https://corsproxy.io/?', type: 'raw' }
         ];
 
         async function fetchWithFallback(targetUrl) {
             let lastError;
+
+            // Ensure strict encoding for proxies that might choke on special chars like '*'
+            // encodeURIComponent leaves '*' alone, but some proxies (like CodeTabs) might need it encoded
+            const encodedTarget = encodeURIComponent(targetUrl).replace(/\*/g, '%2A');
+
             for (const proxy of PROXY_LIST) {
                 try {
-                    const url = proxy.url + encodeURIComponent(targetUrl);
+                    const url = proxy.url + encodedTarget;
                     console.log(`Trying proxy: ${proxy.url}`);
 
-                    const response = await fetch(url);
+                    // Add headers to prevent caching issues where possible
+                    const response = await fetch(url, {
+                        cache: 'no-store'
+                    });
+
                     if (!response.ok) {
                         console.warn(`Proxy ${proxy.url} failed: ${response.status}`);
                         continue;
@@ -297,15 +306,25 @@
 
                     // Handle standard raw proxies
                     if (proxy.type === 'raw') {
-                        return await response.json();
+                        const text = await response.text();
+                        try {
+                            return JSON.parse(text);
+                        } catch (e) {
+                            console.warn('Raw proxy returned non-JSON:', text ? text.substring(0, 50) : 'empty');
+                            throw new Error('Proxy returned invalid JSON');
+                        }
                     }
 
                     // Handle AllOrigins JSON wrapper
                     if (proxy.type === 'json_wrapper') {
                         const wrapperData = await response.json();
                         if (wrapperData.contents) {
-                            // Parse the actual API response string contained in 'contents'
-                            return JSON.parse(wrapperData.contents);
+                            try {
+                                return JSON.parse(wrapperData.contents);
+                            } catch (e) {
+                                console.warn('JSON wrapper parse error, trying raw content');
+                                return wrapperData.contents;
+                            }
                         } else {
                             throw new Error('Invalid wrapper response');
                         }
