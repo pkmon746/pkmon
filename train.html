@@ -75,7 +75,7 @@
             </div>
 
             <!-- Introduction -->
-            <div class="intro-card glass-card fade-in" style="max-width: 960px; margin: 0 auto 4rem;">
+            <div class="intro-card glass-card fade-in" style="max-width: 1280px; margin: 0 auto 4rem;">
                 <h2 style="font-size: 2rem; margin-bottom: 1.5rem;">Introduction</h2>
                 <p style="font-size: 1.1rem; line-height: 1.8; color: var(--text-secondary);">
                     The PokéDex Trading Agent is a cutting-edge tool designed to bridge the gap between Web3 and Web3
@@ -242,15 +242,15 @@
             color: var(--secondary-purple);
         }
 
-       .features-grid {
-           display: grid;
-           grid-template-columns: repeat(3, 1fr);
-           gap: 2rem;
-           margin-bottom: 2rem;
-           max-width: 960px;
-           margin-left: auto;
-           margin-right: auto;
-       }
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
+        }
 
         .feature-card {
             background: var(--bg-card);
@@ -289,11 +289,16 @@
             line-height: 1.6;
         }
 
+        /* 변경 */
         .agents-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
+            max-width: 1280px;
+            margin-left: auto;
+            margin-right: auto;
         }
+        
 
         .agent-card {
             background: var(--bg-card);
