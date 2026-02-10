@@ -272,6 +272,30 @@
         let totalCards = 0;
         const PAGE_SIZE = 24; // Increased from 20
 
+        // List of CORS proxies to try in order
+        const PROXY_LIST = [
+            'https://api.codetabs.com/v1/proxy?quest=',
+            'https://api.allorigins.win/raw?url=',
+            'https://corsproxy.io/?'
+        ];
+
+        async function fetchWithFallback(targetUrl) {
+            let lastError;
+            for (const proxy of PROXY_LIST) {
+                try {
+                    const url = proxy + encodeURIComponent(targetUrl);
+                    console.log(`Trying proxy: ${proxy}`);
+                    const response = await fetch(url);
+                    if (response.ok) return response;
+                    console.warn(`Proxy ${proxy} failed: ${response.status}`);
+                } catch (error) {
+                    console.warn(`Proxy ${proxy} error:`, error);
+                    lastError = error;
+                }
+            }
+            throw new Error(`All proxies failed. Last error: ${lastError?.message || 'Unknown error'}`);
+        }
+
         async function searchTCG() {
             const input = document.getElementById('tcgSearch').value.toLowerCase().trim();
 
@@ -296,15 +320,10 @@
             try {
                 console.log('Fetching cards for:', input);
 
-                // Use CodeTabs CORS proxy as fallback
-                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
-                const targetUrl = encodeURIComponent(`${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`);
-                const url = proxyUrl + targetUrl;
+                const targetUrl = `${TCG_API}/cards?q=name:${input}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
 
-                console.log('URL:', url);
-
-                // Don't use custom headers - causes CORS preflight issues
-                const response = await fetch(url);
+                // Use fallback fetch
+                const response = await fetchWithFallback(targetUrl);
 
                 console.log('Response status:', response.status);
 
@@ -364,16 +383,10 @@
             loadMoreBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
 
             try {
-                const proxyUrl = 'https://api.codetabs.com/v1/proxy?quest=';
-                const targetUrl = encodeURIComponent(`${TCG_API}/cards?q=name:${currentQuery}*&page=${currentPage}&pageSize=${PAGE_SIZE}`);
-                const url = proxyUrl + targetUrl;
+                const targetUrl = `${TCG_API}/cards?q=name:${currentQuery}*&page=${currentPage}&pageSize=${PAGE_SIZE}`;
 
-                // Don't use custom headers - causes CORS issues
-                const response = await fetch(url);
-
-                if (!response.ok) {
-                    throw new Error(`Failed to load more cards (${response.status})`);
-                }
+                // Use fallback fetch
+                const response = await fetchWithFallback(targetUrl);
 
                 const data = await response.json();
 
