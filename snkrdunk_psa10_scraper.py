@@ -120,7 +120,51 @@ def _build_driver(headless: bool = True) -> webdriver.Chrome:
     options.add_experimental_option('excludeSwitches', ['enable-automation'])
     options.add_experimental_option('useAutomationExtension', False)
 
-    service = Service(ChromeDriverManager().install())
+    # [Fix for Docker/Render]
+    # webdriver-manager sometimes points to 'THIRD_PARTY_NOTICES.chromedriver' (text file)
+    # instead of the actual binary. We must ensure we point to the executable.
+    
+    try:
+        driver_path = ChromeDriverManager().install()
+        
+        # If path ends with .chromedriver (likely not a binary in Linux) or is a known text file
+        if driver_path.endswith("THIRD_PARTY_NOTICES.chromedriver"):
+            base_dir = os.path.dirname(driver_path)
+            potential_binary = os.path.join(base_dir, "chromedriver")
+            if os.path.exists(potential_binary) and os.access(potential_binary, os.X_OK):
+                print(f"✅ Corrected driver path: {potential_binary}")
+                driver_path = potential_binary
+            else:
+                # Fallback: search correctly in the directory tree
+                print(f"⚠️ License file detected at {driver_path}. Searching for binary...")
+                found = False
+                for root, dirs, files in os.walk(os.path.dirname(base_dir)):
+                    for file in files:
+                        if file == "chromedriver":
+                            full_path = os.path.join(root, file)
+                            if os.access(full_path, os.X_OK):
+                                driver_path = full_path
+                                found = True
+                                break
+                    if found: break
+                
+                if found:
+                    print(f"✅ Found chromedriver binary: {driver_path}")
+
+        # Explicitly set permissions if needed
+        if not os.access(driver_path, os.X_OK):
+            try:
+                os.chmod(driver_path, 0o755)
+            except Exception:
+                pass
+
+        service = Service(driver_path)
+    except Exception as e:
+        print(f"⚠️ WebDriver Manager Error: {e}")
+        # Fallback to system-installed chromedriver (since we installed google-chrome-stable)
+        print("Using system default chromedriver...")
+        service = Service() # Expects 'chromedriver' in PATH
+
     driver = webdriver.Chrome(service=service, options=options)
     driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
         'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
