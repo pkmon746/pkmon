@@ -148,6 +148,16 @@ app.get('/api/snkrdunk/search', (req, res) => {
             const result = JSON.parse(jsonOutput);
             console.log(`[SNKRDUNK Search] Result:`, result);
             console.log(`========================================\n`);
+
+            // Check if scraper returned an error structure
+            if (result.error) {
+                return res.status(500).json({
+                    success: false,
+                    error: result.error,
+                    debug_info: result.debug_info
+                });
+            }
+
             res.json(result);
         } catch (e) {
             console.error(`[SNKRDUNK Search] Parse error: ${e.message}`);

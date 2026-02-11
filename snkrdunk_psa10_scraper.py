@@ -641,11 +641,20 @@ def get_cheapest_psa10(card_name: str,
         print(f"\n❌ 오류 발생: {e}")
         import traceback
         traceback.print_exc()
+        
+        # 디버그 정보 수집
+        debug_info = {}
         try:
-            driver.save_screenshot('snkrdunk_error.png')
-        except Exception:
+            debug_info['title'] = driver.title
+            debug_info['source_snippet'] = driver.page_source[:200] if driver.page_source else "No source"
+            print(f"📄 Page Title: {debug_info['title']}")
+        except:
             pass
-        return None
+            
+        return {
+            'error': str(e),
+            'debug_info': debug_info
+        }
 
     finally:
         driver.quit()
