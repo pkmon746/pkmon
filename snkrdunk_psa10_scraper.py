@@ -98,6 +98,10 @@ def extract_pokemon_name(card_name: str) -> str:
     name = card_name.strip().lower()
 
     # 접두사 제거
+    # 카드 번호(#94 등) 제거 - 프론트엔드 구버전 호환용
+    name = re.sub(r'#.*', '', name)
+    name = name.strip()
+
     for pattern in _REMOVE_PREFIXES:
         name = re.sub(pattern, '', name, flags=re.IGNORECASE)
 
