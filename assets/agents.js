@@ -368,7 +368,7 @@ class AgentSystem {
                 // number: cardInfo.collectionNumber || ''
             });
 
-            const response = await fetch(`/api/snkrdunk/search?${searchParams}`);
+            const response = await fetch(`http://localhost:3000/api/snkrdunk/search?${searchParams}`);
 
             if (!response.ok) {
                 throw new Error(`SNKRDUNK API returned ${response.status}`);
