@@ -33,6 +33,20 @@ from webdriver_manager.chrome import ChromeDriverManager
 _REMOVE_PREFIXES = [
     r'^fa[/\-\s]+',        # FA/Gengar → Gengar
     r'^full\s*art[/\-\s]+',
+    r"^morty's[\s]+",
+    r"^misty's[\s]+",
+    r"^brock's[\s]+",
+    r"^erika's[\s]+",
+    r"^lt\.?\s*surge's[\s]+",
+    r"^sabrina's[\s]+",
+    r"^blaine's[\s]+",
+    r"^giovanni's[\s]+",
+    r"^koga's[\s]+",
+    r"^rocket's[\s]+",
+    r"^dark[\s]+",
+    r"^light[\s]+",
+    r"^shining[\s]+",
+    r"^radiant[\s]+",
 ]
 
 _REMOVE_SUFFIXES = [
