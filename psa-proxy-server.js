@@ -7,7 +7,10 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 
 const app = express();
-app.use(cors()); // Enable CORS for your frontend
+app.use(cors({
+    origin: ['https://www.pkmon.store', 'http://localhost:3000'],
+    credentials: true
+})); // Enable CORS for your frontend
 app.use(express.json());
 
 // Serve static files (추가된 코드)
@@ -122,13 +125,17 @@ app.get('/api/snkrdunk/search', (req, res) => {
         return res.status(400).json({ success: false, error: 'Missing name parameter' });
     }
 
+    // Clean the name parameter to remove suffixes like ':1', ':2', etc.
+    const cleanName = name.split(':')[0].trim();
+    
     console.log(`\n========================================`);
-    console.log(`[SNKRDUNK Search] Querying DB for: ${name}`);
+    console.log(`[SNKRDUNK Search] Original name: ${name}`);
+    console.log(`[SNKRDUNK Search] Cleaned name: ${cleanName}`);
 
     // Execute Python script to query SQLite DB
     // Pass Name, Set, Number to help scraper accuracy if needed
     // quote arguments to handle spaces
-    const command = `python query_snkrdunk_db.py "${name}" "${set || ''}" "${number || ''}"`;
+    const command = `python query_snkrdunk_db.py "${cleanName}" "${set || ''}" "${number || ''}"`;
 
     exec(command, (error, stdout, stderr) => {
         if (error) {

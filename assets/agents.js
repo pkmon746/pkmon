@@ -61,7 +61,7 @@ class AgentSystem {
 
         try {
             // Use local proxy server to avoid CORS issues
-            const response = await fetch(`/api/psa/cert/${certNumber}`, {
+            const response = await fetch(`https://www.pkmon.store/api/psa/cert/${certNumber}`, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -368,7 +368,7 @@ class AgentSystem {
                 // number: cardInfo.collectionNumber || ''
             });
 
-            const response = await fetch(`/api/snkrdunk/search?${searchParams}`);
+            const response = await fetch(`https://your-app-name.onrender.com/api/snkrdunk/search?${searchParams}`);
 
             if (!response.ok) {
                 throw new Error(`SNKRDUNK API returned ${response.status}`);
