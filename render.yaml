@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: gengar-agent
+    env: docker
+    plan: free
+    repo: https://github.com/pkmon746/pkmon
+    branch: main
+    envVars:
+      - key: PORT
+        value: 3000

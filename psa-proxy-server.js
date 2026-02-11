@@ -7,10 +7,7 @@ const cors = require('cors');
 const fetch = require('node-fetch');
 
 const app = express();
-app.use(cors({
-    origin: ['https://www.pkmon.store', 'http://localhost:3000'],
-    credentials: true
-})); // Enable CORS for your frontend
+app.use(cors()); // Enable CORS for ALL origins (Public Agent)
 app.use(express.json());
 
 // Serve static files (추가된 코드)
@@ -127,7 +124,7 @@ app.get('/api/snkrdunk/search', (req, res) => {
 
     // Clean the name parameter to remove suffixes like ':1', ':2', etc.
     const cleanName = name.split(':')[0].trim();
-    
+
     console.log(`\n========================================`);
     console.log(`[SNKRDUNK Search] Original name: ${name}`);
     console.log(`[SNKRDUNK Search] Cleaned name: ${cleanName}`);
