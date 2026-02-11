@@ -112,7 +112,7 @@ app.get('/api/pricecharting/csv', async (req, res) => {
     }
 });
 
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 
 // SNKRDUNK endpoint - Search via Python Bridge (DB Query)
 app.get('/api/snkrdunk/search', (req, res) => {
@@ -129,12 +129,16 @@ app.get('/api/snkrdunk/search', (req, res) => {
     console.log(`[SNKRDUNK Search] Original name: ${name}`);
     console.log(`[SNKRDUNK Search] Cleaned name: ${cleanName}`);
 
-    // Execute Python script to query SQLite DB
-    // Pass Name, Set, Number to help scraper accuracy if needed
-    // quote arguments to handle spaces
-    const command = `python query_snkrdunk_db.py "${cleanName}" "${set || ''}" "${number || ''}"`;
+    // Execute Python script - using execFile to prevent shell injection
+    // Pass Name, Set, Number to help scraper accuracy
+    const args = [
+        'query_snkrdunk_db.py',
+        cleanName,
+        set || '',
+        number || ''
+    ];
 
-    exec(command, (error, stdout, stderr) => {
+    execFile('python', args, (error, stdout, stderr) => {
         if (error) {
             console.error(`[SNKRDUNK Search] Exec error: ${error.message}`);
             return res.status(500).json({ success: false, error: 'Internal server error' });
