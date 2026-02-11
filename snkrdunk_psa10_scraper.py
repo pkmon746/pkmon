@@ -120,6 +120,41 @@ def extract_pokemon_name(card_name: str) -> str:
 
 
 # ──────────────────────────────────────────────────────────────
+# 세트 이름 매핑 (PriceCharting -> SNKRDUNK)
+# ──────────────────────────────────────────────────────────────
+
+_SET_MAPPING = {
+    'neo 4': 'destiny',
+    'neo 3': 'revelation',
+    'neo 2': 'discovery',
+    'neo 1': 'genesis',
+    'base set': 'base',
+    'legendary collection': 'legendary',
+    'expedition base set': 'expedition',
+    'aquapolis': 'aquapolis',
+    'skyridge': 'skyridge',
+    'fossil': 'fossil',
+    'jungle': 'jungle',
+    'team rocket': 'rocket',
+    'gym heroes': 'heroes',
+    'gym challenge': 'challenge',
+}
+
+def map_set_name(set_name: str) -> str:
+    """
+    세트 이름을 SNKRDUNK 검색에 유리하게 변환.
+    예: "Pokemon Japanese Neo 4" -> "Destiny" (Neo 4 is Neo Destiny)
+    """
+    s_lower = set_name.lower()
+    
+    for key, value in _SET_MAPPING.items():
+        if key in s_lower:
+            return value
+            
+    return set_name
+
+
+# ──────────────────────────────────────────────────────────────
 # 드라이버 초기화
 # ──────────────────────────────────────────────────────────────
 
@@ -256,11 +291,22 @@ def _find_card_link(driver: webdriver.Chrome,
     cn = normalize(card_name)
     pn = normalize(pokemon_name)
     sn = normalize(set_name)
+    
+    # 세트 이름 매핑 적용 (예: Neo 4 -> Destiny)
+    mapped_set = map_set_name(set_name)
+    mapped_sn = normalize(mapped_set)
+    
     num = card_number.strip()
 
     # 세트 이름에서 의미 있는 토큰만 추출
-    _generic = {'pokemon', 'japanese', 'english', 'card', 'cards', 'tcg', 'the'}
-    set_tokens = [t for t in sn.split() if t not in _generic and len(t) > 1]
+    _generic = {'pokemon', 'japanese', 'english', 'card', 'cards', 'tcg', 'the', 'neo'}
+    # 매핑된 이름과 원본 이름 모두 토큰화해 사용
+    set_tokens = set(
+        [t for t in sn.split() if t not in _generic and len(t) > 1] +
+        [t for t in mapped_sn.split() if t not in _generic and len(t) > 1]
+    )
+    
+    print(f"         Set Tokens : {set_tokens}")
 
     # 1단계: 이미지 alt 텍스트로 먼저 시도 (XX/YY 형식 지원)
     print(f"         이미지 alt 텍스트로 매칭 시작...")
