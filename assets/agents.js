@@ -60,8 +60,8 @@ class AgentSystem {
         this.addChatMessage('Sylveon', 'Fetching PSA data for CERT ' + certNumber + '...', 700);
 
         try {
-            // Use local proxy server to avoid CORS issues
-            const response = await fetch(`https://www.pkmon.store/api/psa/cert/${certNumber}`, {
+            // Use deployed proxy server to avoid CORS issues
+            const response = await fetch(`https://pkmon-1.onrender.com/api/psa/cert/${certNumber}`, {
                 headers: {
                     'Content-Type': 'application/json'
                 }
