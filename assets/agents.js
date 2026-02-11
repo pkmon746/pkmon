@@ -357,9 +357,10 @@ class AgentSystem {
             // Call SNKRDUNK Search API
             console.log('[Gengar] Calling SNKRDUNK Search API...');
 
-            // Search by name for dynamic lookup (uses our new Card Mapper!)
-            const cardName = cardInfo ? cardInfo.cardName : 'Gengar';
-            // Extract set/number if available in cardInfo, otherwise just use name
+            // Search by name for dynamic lookup
+            // Clean name: remove # and anything after it (e.g. "Dark Gengar #94" -> "Dark Gengar")
+            let cardNameRaw = cardInfo ? cardInfo.cardName : 'Gengar';
+            const cardName = cardNameRaw.split('#')[0].trim();
             // For now, we rely heavily on the name search which our backend handles well
 
             const searchParams = new URLSearchParams({
