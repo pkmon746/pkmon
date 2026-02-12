@@ -27,20 +27,32 @@ class WalletConnector {
     }
 
     async checkConnection() {
-        // ✅ BUG1 FIX: 사용자가 명시적으로 로그아웃했으면 자동 재연결 차단
+        // ✅ FIX: 명시적 로그아웃 상태면 자동연결 완전 차단
         if (sessionStorage.getItem(this.LOGOUT_FLAG) === 'true') {
-            console.log('[Wallet] 로그아웃 상태 - 자동 재연결 건너뜀');
+            console.log('[Wallet] 로그아웃 상태 - 자동 재연결 차단');
             this.currentAccount = null;
             this.updateUI();
             return;
         }
 
+        // ✅ FIX: localStorage 기반 "사이트 연결 승인" 여부 확인
+        // Rabby가 배경에서 계정을 노출하더라도,
+        // 사용자가 이 사이트에서 직접 Connect Wallet을 누른 적이 있어야만 자동 복원
+        if (localStorage.getItem('pkmon_wallet_connected') !== 'true') {
+            console.log('[Wallet] 이 사이트에서 연결 승인된 적 없음 - 자동연결 건너뜀');
+            this.currentAccount = null;
+            this.updateUI();
+            return;
+        }
+
+        // 위 두 조건을 통과한 경우만 자동 복원 (새로고침 시 연결 유지)
         if (typeof window.ethereum !== 'undefined') {
             try {
                 const accounts = await window.ethereum.request({ method: 'eth_accounts' });
                 if (accounts.length > 0) {
                     this.currentAccount = accounts[0];
                     this.updateUI();
+                    console.log('[Wallet] 기존 연결 복원:', this.currentAccount.slice(0, 10) + '...');
                 }
             } catch (error) {
                 console.error('Error checking connection:', error);
@@ -57,8 +69,9 @@ class WalletConnector {
 
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
 
-            // ✅ BUG1 FIX: 지갑 연결 시 로그아웃 플래그 제거
+            // ✅ FIX: 지갑 연결 시 로그아웃 플래그 제거 + 연결 승인 플래그 저장
             sessionStorage.removeItem(this.LOGOUT_FLAG);
+            localStorage.setItem('pkmon_wallet_connected', 'true');
 
             this.currentAccount = accounts[0];
             this.provider = window.ethereum;
@@ -69,6 +82,7 @@ class WalletConnector {
             window.ethereum.on('accountsChanged', (accounts) => {
                 if (accounts.length > 0) {
                     sessionStorage.removeItem(this.LOGOUT_FLAG);
+                    localStorage.setItem('pkmon_wallet_connected', 'true');
                     this.currentAccount = accounts[0];
                     this.updateUI();
                     window.location.reload();
@@ -164,8 +178,10 @@ class WalletConnector {
     }
 
     async logout() {
-        // ✅ BUG1 FIX: 로그아웃 플래그 저장 → 새로고침 후도 자동 재연결 차단
+        // ✅ FIX: 로그아웃 플래그 저장 + 연결 승인 플래그 제거
+        // 이후 페이지 새로고침해도 자동연결 완전 차단
         sessionStorage.setItem(this.LOGOUT_FLAG, 'true');
+        localStorage.removeItem('pkmon_wallet_connected');
         this.currentAccount = null;
         this.provider = null;
         this.updateUI();
