@@ -17,7 +17,7 @@ class PKMONOneTimePayment {
         this.paymentAmount = 0.1;
 
         // 🔧 Backend API URL - 실제 서버 주소로 변경
-        this.apiUrl = 'https://pkmon-payment-backend-api.onrender.com'; // ✅ Render.com 배포 URL // TODO: 실제 백엔드 서버 주소로 변경
+        this.apiUrl = 'https://pkmon-payment-backend-api.onrender.com/api'; // ✅ Render.com 배포 URL // TODO: 실제 백엔드 서버 주소로 변경
 
         // ERC-20 ABI (balanceOf, decimals, transfer)
         this.erc20ABI = [
