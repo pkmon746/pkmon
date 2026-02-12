@@ -1,6 +1,7 @@
 // ============================================================
-// PKMON Payment Backend Server
-// SQLite 데이터베이스 기반 결제 추적
+// PKMON Payment Backend Server - PRODUCTION
+// 배포 URL: Render.com
+// 프론트엔드: https://www.pkmon.store
 // ============================================================
 
 const express = require('express');
@@ -10,16 +11,40 @@ const path = require('path');
 
 const app = express();
 
-// CORS 설정 (프론트엔드 도메인 허용)
+// ✅ CORS 설정 - pkmon.store 실제 도메인 허용
+const allowedOrigins = [
+    'https://www.pkmon.store',
+    'https://pkmon.store',
+    'http://localhost:8080',    // 로컬 테스트용
+    'http://localhost:3000',    // 로컬 테스트용
+    'http://127.0.0.1:8080',    // 로컬 테스트용
+];
+
 app.use(cors({
-    origin: '*', // 프로덕션에서는 실제 도메인으로 변경 필요
-    methods: ['GET', 'POST'],
-    credentials: true
+    origin: function (origin, callback) {
+        // origin이 없는 경우 (curl, Postman 등) 허용
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            console.warn('⚠️ CORS 차단:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+// OPTIONS preflight 처리
+app.options('*', cors());
 
 app.use(express.json());
 
+// ─────────────────────────────────────────
 // SQLite 데이터베이스 초기화
+// ─────────────────────────────────────────
 const dbPath = path.join(__dirname, 'pkmon_payments.db');
 const db = new sqlite3.Database(dbPath, (err) => {
     if (err) {
@@ -48,7 +73,6 @@ db.serialize(() => {
         }
     });
 
-    // 인덱스 생성 (검색 속도 향상)
     db.run(`
         CREATE INDEX IF NOT EXISTS idx_wallet_address 
         ON payments(wallet_address)
@@ -59,12 +83,23 @@ db.serialize(() => {
 // API 엔드포인트
 // ─────────────────────────────────────────
 
-// 1. 헬스체크
+// 1. 헬스체크 - Render.com이 서버 상태 확인할 때 사용
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'ok',
         service: 'PKMON Payment Tracker',
-        timestamp: Date.now()
+        version: '1.0.0',
+        timestamp: Date.now(),
+        uptime: process.uptime()
+    });
+});
+
+// Render.com 루트 핑
+app.get('/', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        message: 'PKMON Payment API Server',
+        docs: '/api/health'
     });
 });
 
@@ -72,7 +107,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/check-payment/:address', (req, res) => {
     const address = req.params.address.toLowerCase().trim();
 
-    if (!address || !address.startsWith('0x')) {
+    if (!address || !address.startsWith('0x') || address.length !== 42) {
         return res.status(400).json({ error: 'Invalid wallet address' });
     }
 
@@ -102,7 +137,6 @@ app.get('/api/check-payment/:address', (req, res) => {
 app.post('/api/record-payment', (req, res) => {
     const { address, txHash, amount, timestamp } = req.body;
 
-    // 필수 필드 검증
     if (!address || !txHash || !amount) {
         return res.status(400).json({ 
             error: 'Missing required fields',
@@ -112,12 +146,10 @@ app.post('/api/record-payment', (req, res) => {
 
     const normalizedAddress = address.toLowerCase().trim();
 
-    // 지갑 주소 형식 검증
     if (!normalizedAddress.startsWith('0x') || normalizedAddress.length !== 42) {
         return res.status(400).json({ error: 'Invalid wallet address format' });
     }
 
-    // DB에 저장 (중복 방지: UNIQUE 제약)
     db.run(
         `INSERT OR REPLACE INTO payments 
          (wallet_address, tx_hash, amount, timestamp) 
@@ -141,24 +173,16 @@ app.post('/api/record-payment', (req, res) => {
     );
 });
 
-// 4. 모든 결제 목록 조회 (GET /api/payments/all) - 관리자용
+// 4. 모든 결제 목록 (GET /api/payments/all) - 관리자용
 app.get('/api/payments/all', (req, res) => {
-    // 프로덕션에서는 인증 필요!
-    // if (!req.headers.authorization) return res.status(401).json({ error: 'Unauthorized' });
-
     db.all(
         'SELECT * FROM payments ORDER BY created_at DESC',
         [],
         (err, rows) => {
             if (err) {
-                console.error('❌ DB 조회 오류:', err);
                 return res.status(500).json({ error: 'Database error' });
             }
-
-            res.json({
-                total: rows.length,
-                payments: rows
-            });
+            res.json({ total: rows.length, payments: rows });
         }
     );
 });
@@ -175,10 +199,8 @@ app.get('/api/stats', (req, res) => {
         [],
         (err, row) => {
             if (err) {
-                console.error('❌ 통계 조회 오류:', err);
                 return res.status(500).json({ error: 'Database error' });
             }
-
             res.json({
                 totalPayments: row.total_payments || 0,
                 totalAmount: row.total_amount || 0,
@@ -194,13 +216,15 @@ app.get('/api/stats', (req, res) => {
 // ─────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log('═══════════════════════════════════════════');
-    console.log('🚀 PKMON Payment API Server');
+    console.log('🚀 PKMON Payment API Server - PRODUCTION');
     console.log('═══════════════════════════════════════════');
-    console.log(`📡 서버 주소: http://localhost:${PORT}`);
-    console.log(`💾 데이터베이스: ${dbPath}`);
+    console.log(`📡 포트: ${PORT}`);
+    console.log(`💾 DB: ${dbPath}`);
+    console.log('🌐 허용 도메인:');
+    allowedOrigins.forEach(o => console.log(`   - ${o}`));
     console.log('');
     console.log('📍 API 엔드포인트:');
     console.log(`   GET  /api/health`);
@@ -212,15 +236,11 @@ app.listen(PORT, () => {
     console.log('');
 });
 
-// 우아한 종료 처리
+// 우아한 종료
 process.on('SIGINT', () => {
     console.log('\n🛑 서버 종료 중...');
-    db.close((err) => {
-        if (err) {
-            console.error('❌ DB 종료 오류:', err);
-        } else {
-            console.log('✅ 데이터베이스 연결 종료');
-        }
+    db.close(() => {
+        console.log('✅ DB 연결 종료');
         process.exit(0);
     });
 });
