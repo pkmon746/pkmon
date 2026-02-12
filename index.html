@@ -30,8 +30,8 @@
                         Pokédex <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
                     </a>
                     <div class="dropdown-menu">
-                        <a href="pokedex.html" class="dropdown-item">Pokédex</a>
-                        <a href="tcg-search.html" class="dropdown-item">Poké TCG</a>
+                        <a href="javascript:void(0);" onclick="handleProtectedLink('pokedex.html')" class="dropdown-item">Pokédex</a>
+                        <a href="javascript:void(0);" onclick="handleProtectedLink('tcg-search.html')" class="dropdown-item">Poké TCG</a>
                         <a href="pokememe.html" class="dropdown-item">PokéMeme</a>
                     </div>
                 </li>
@@ -69,7 +69,7 @@
                 </li>
 
                 <li class="nav-item">
-                    <a href="agent-dashboard.html" class="nav-link btn-start">START</a>
+                    <a href="javascript:void(0);" onclick="handleProtectedLink('agent-dashboard.html')" class="nav-link btn-start">START</a>
                 </li>
 
                 <li class="nav-item">
@@ -281,7 +281,40 @@
         }
     </style>
 
+    <!-- ✅ PKMON Payment System Scripts -->
+    <script src="./ethers.min.js"></script>
+    <script src="pkmon-onetime-payment.js"></script>
     <script src="assets/wallet.js"></script>
+
+    <!-- ✅ Protected Link Handler -->
+    <script>
+        async function handleProtectedLink(targetUrl) {
+            if (!window.ethereum) {
+                alert('MetaMask 또는 Rabby Wallet을 설치해주세요!');
+                return;
+            }
+
+            try {
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                const account = accounts[0];
+
+                if (window.pkmonPayment) {
+                    const isPaid = await window.pkmonPayment.checkPaymentHistory(account);
+                    if (isPaid) {
+                        window.location.href = targetUrl;
+                    } else {
+                        await window.pkmonPayment.checkAccess();
+                    }
+                } else {
+                    alert('시스템 로딩 중입니다. 새로고침(F5) 후 다시 시도해주세요.');
+                }
+            } catch (error) {
+                console.error('[PKMON] 오류:', error);
+                alert('지갑 연결에 실패했습니다: ' + error.message);
+            }
+        }
+    </script>
 </body>
 
 </html>
+
