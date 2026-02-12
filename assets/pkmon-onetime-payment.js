@@ -194,33 +194,33 @@ class PKMONOneTimePayment {
     // ─────────────────────────────────────────
     // pkmon-onetime-payment.js 내 수정 부분
     async checkPKMONBalance(userAddress) {
-        try {
-            // ✅ 사용자가 제공한 메인넷 RPC를 직접 사용하여 지갑 체인과 무관하게 조회
-            const mainnetRpc = 'https://rpc2.monad.xyz'; 
-            const provider = new window.ethers.providers.JsonRpcProvider(mainnetRpc);
+       try {
+           // ✅ 사용자의 지갑 설정과 상관없이 모나드 네트워크에서 직접 잔액 조회
+           const rpcUrl = 'https://rpc2.monad.xyz'; // 모나드 메인넷 RPC (필요시 변경)
+           const provider = new window.ethers.providers.JsonRpcProvider(rpcUrl);
 
-            const contract = new window.ethers.Contract(
-                this.tokenAddress,
-                this.erc20ABI,
-                provider // window.ethereum 대신 고정된 provider 사용
-            );
+           const contract = new window.ethers.Contract(
+               this.tokenAddress,
+               this.erc20ABI,
+               provider 
+           );
 
-            // 컨트랙트 존재 여부 확인 (코드 안정성)
-            const code = await provider.getCode(this.tokenAddress);
-            if (code === '0x') {
-                console.error('[Payment] 현재 네트워크에 PKMON 토큰 컨트랙트가 없습니다.');
-                return '0';
-            }
+           // 해당 주소에 토큰 컨트랙트가 있는지 확인
+           const code = await provider.getCode(this.tokenAddress);
+           if (code === '0x') {
+               console.warn('[Payment] 컨트랙트가 존재하지 않음 (네트워크 확인 필요)');
+               return '0';
+           }
 
-            const decimals = await contract.decimals();
-            const balance = await contract.balanceOf(userAddress);
-        
-            return window.ethers.utils.formatUnits(balance, decimals);
-        } catch (error) {
-            console.error('[Payment] 잔액 확인 오류:', error);
-            return '0';
-        }
-    }  
+           const decimals = await contract.decimals();
+           const balance = await contract.balanceOf(userAddress);
+
+           return window.ethers.utils.formatUnits(balance, decimals);
+       } catch (error) {
+           console.error('[Payment] 잔액 확인 오류:', error);
+           return '0';
+       }
+   }
 
     // ─────────────────────────────────────────
     // 결제 처리
