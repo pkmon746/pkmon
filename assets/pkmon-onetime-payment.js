@@ -138,20 +138,27 @@ class PKMONOneTimePayment {
     async checkAccess() {
         console.log('[PKMON] 결제 시스템 초기화 완료 (0.1 PKMON)');
 
+        // ✅ FIX: 사이트에서 명시적으로 로그아웃한 상태면 아무것도 하지 않음
+        // Rabby/MetaMask가 배경에서 계정을 노출해도 무시
+        if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
+            console.log('[Payment] 로그아웃 상태 - checkAccess 중단');
+            return;
+        }
+
+        // ✅ FIX: walletConnector가 명시적으로 연결 승인한 계정만 사용
+        // eth_accounts로 Rabby 계정을 직접 읽지 않음
+        const connectedAccount = window.walletConnector && window.walletConnector.currentAccount;
+        if (!connectedAccount) {
+            console.log('[Payment] 사이트에 연결된 지갑 없음 - checkAccess 중단');
+            return;
+        }
+
         if (typeof window.ethereum === 'undefined') {
-            this.showInstallWalletModal();
             return;
         }
 
         try {
-            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-
-            if (accounts.length === 0) {
-                console.log('[Payment] 지갑 연결 필요');
-                return; // 지갑이 연결되어 있지 않으면 아무 동작도 하지 않음
-            }
-
-            const userAddress = accounts[0];
+            const userAddress = connectedAccount;
             console.log('[Payment] 연결된 지갑:', userAddress);
 
             // 결제 이력 확인
@@ -486,17 +493,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     const paymentSystem = new PKMONOneTimePayment();
     window.pkmonPayment = paymentSystem;
 
-    // 지갑 연결 후 결제 확인
-    if (window.ethereum) {
-        window.ethereum.on('accountsChanged', async (accounts) => {
-            if (accounts.length > 0) {
-                console.log('[Payment] 지갑 변경됨, 결제 상태 재확인');
-                await paymentSystem.checkAccess();
-            }
-        });
-    }
-
-    // 초기 실행
-    await paymentSystem.checkAccess();
+    // ✅ FIX: 페이지 로드 시 자동 checkAccess() 완전 제거
+    // → 반드시 사용자가 직접 START / Get Started 버튼을 눌러야만 게이트 작동
+    // → accountsChanged 이벤트도 제거 (Rabby 자동 감지 차단)
+    console.log('[PKMON] 결제 시스템 대기 중 (수동 트리거 필요)');
 });
 
