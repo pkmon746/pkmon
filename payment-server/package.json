@@ -1,0 +1,21 @@
+{
+  "name": "pkmon-payment-server",
+  "version": "1.0.0",
+  "description": "PKMON Payment Tracking Backend Server",
+  "main": "payment-api.js",
+  "scripts": {
+    "start": "node payment-api.js",
+    "dev": "nodemon payment-api.js"
+  },
+  "keywords": ["pkmon", "payment", "blockchain", "monad"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
