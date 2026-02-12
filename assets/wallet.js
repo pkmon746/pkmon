@@ -105,30 +105,33 @@ class WalletConnector {
     }
 
     async switchToMonad() {
-        try {
-            await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: '0xA1DE' }],
-            });
-        } catch (switchError) {
-            if (switchError.code === 4902) {
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: '0xA1DE',
-                            chainName: 'Monad Testnet',
-                            nativeCurrency: { name: 'Monad', symbol: 'MONAD', decimals: 18 },
-                            rpcUrls: ['https://testnet-rpc.monad.xyz'],
-                            blockExplorerUrls: ['https://explorer.monad.xyz']
-                        }]
-                    });
-                } catch (addError) {
-                    console.error('Error adding Monad network:', addError);
-                }
+    // ✅ 모나드 메인넷 설정 정보
+    const MONAD_MAINNET_PARAMS = {
+        chainId: '0x8F', // 143을 16진수로 표기
+        chainName: 'Monad Mainnet',
+        nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
+        rpcUrls: ['https://rpc2.monad.xyz'], // 메인넷 RPC 주소
+        blockExplorerUrls: ['https://monadvision.com'] // 메인넷 익스플로러
+    };
+
+    try {
+        await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: MONAD_MAINNET_PARAMS.chainId }],
+        });
+    } catch (switchError) {
+        if (switchError.code === 4902) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_addEthereumChain',
+                    params: [MONAD_MAINNET_PARAMS]
+                });
+            } catch (addError) {
+                console.error('Error adding Monad network:', addError);
             }
         }
     }
+}
 
     initLogoutModal() {
         const modalHTML = `
