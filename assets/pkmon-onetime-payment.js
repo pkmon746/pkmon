@@ -1,0 +1,486 @@
+// ============================================================
+// PKMON One-Time Payment System (Production - Backend API)
+// 한 번 결제한 지갑 → 영구 접근 허용
+// 잔액 부족 지갑 → 구매 유도 메시지
+// 미결제 지갑 → 결제 확인 모달 → 지갑 승인
+// ============================================================
+
+class PKMONOneTimePayment {
+    constructor() {
+        // ✅ PKMON 토큰 컨트랙트 주소 (Monad Testnet)
+        this.tokenAddress = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+
+        // ✅ 결제 수신 지갑 주소 - 밈코인 DEV 지갑
+        this.receiverAddress = '0xdF286dC4f9bB608f05369Dcd9B105dA94107b5C9'; // TODO: 실제 밈코인 DEV 지갑 주소로 변경
+
+        // 결제 금액 - 0.1 PKMON
+        this.paymentAmount = 0.1;
+
+        // 🔧 Backend API URL - 실제 서버 주소로 변경
+        this.apiUrl = 'https://pkmon-payment-backend-api.onrender.com'; // ✅ Render.com 배포 URL // TODO: 실제 백엔드 서버 주소로 변경
+
+        // ERC-20 ABI (balanceOf, decimals, transfer)
+        this.erc20ABI = [
+            {
+                "constant": true,
+                "inputs": [{ "name": "_owner", "type": "address" }],
+                "name": "balanceOf",
+                "outputs": [{ "name": "balance", "type": "uint256" }],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{ "name": "", "type": "uint8" }],
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [
+                    { "name": "_to", "type": "address" },
+                    { "name": "_value", "type": "uint256" }
+                ],
+                "name": "transfer",
+                "outputs": [{ "name": "", "type": "bool" }],
+                "type": "function"
+            }
+        ];
+    }
+
+    // ─────────────────────────────────────────
+    // 결제 이력 확인 (백엔드 우선 → 로컬 폴백)
+    // ─────────────────────────────────────────
+    async checkPaymentHistory(userAddress) {
+        const addr = userAddress.toLowerCase();
+
+        try {
+            // 백엔드 API 확인 시도
+            const response = await fetch(`${this.apiUrl}/check-payment/${addr}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[Payment] 백엔드 확인:', data.hasPaid);
+                
+                // 백엔드에 있으면 로컬에도 저장 (캐시)
+                if (data.hasPaid) {
+                    this.savePaymentHistoryLocal(addr);
+                }
+                
+                return data.hasPaid;
+            }
+        } catch (error) {
+            console.warn('[Payment] 백엔드 연결 실패, 로컬 저장소 사용:', error.message);
+        }
+
+        // 백엔드 실패 시 로컬스토리지 확인
+        return this.checkPaymentHistoryLocal(addr);
+    }
+
+    // 로컬스토리지 확인 (폴백)
+    checkPaymentHistoryLocal(userAddress) {
+        try {
+            const paidUsers = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+            return paidUsers.includes(userAddress.toLowerCase());
+        } catch (error) {
+            return false;
+        }
+    }
+
+    // 로컬스토리지 저장
+    savePaymentHistoryLocal(userAddress) {
+        try {
+            const paidUsers = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+            const addr = userAddress.toLowerCase();
+            if (!paidUsers.includes(addr)) {
+                paidUsers.push(addr);
+                localStorage.setItem('pkmon_paid_users', JSON.stringify(paidUsers));
+            }
+        } catch (error) {
+            console.error('Error saving to localStorage:', error);
+        }
+    }
+
+    // 백엔드에 결제 기록
+    async recordPaymentBackend(userAddress, txHash, amount) {
+        try {
+            const response = await fetch(`${this.apiUrl}/record-payment`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    address: userAddress.toLowerCase(),
+                    txHash: txHash,
+                    amount: amount,
+                    timestamp: Date.now()
+                })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                console.log('[Payment] 백엔드 기록 성공:', data);
+                return true;
+            } else {
+                console.warn('[Payment] 백엔드 기록 실패:', response.status);
+                return false;
+            }
+        } catch (error) {
+            console.warn('[Payment] 백엔드 기록 오류:', error.message);
+            return false;
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // 페이지 로드 시 자동 실행
+    // ─────────────────────────────────────────
+    async checkAccess() {
+        console.log('[PKMON] 결제 시스템 초기화 완료 (0.1 PKMON)');
+
+        if (typeof window.ethereum === 'undefined') {
+            this.showInstallWalletModal();
+            return;
+        }
+
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+
+            if (accounts.length === 0) {
+                console.log('[Payment] 지갑 연결 필요');
+                return; // 지갑이 연결되어 있지 않으면 아무 동작도 하지 않음
+            }
+
+            const userAddress = accounts[0];
+            console.log('[Payment] 연결된 지갑:', userAddress);
+
+            // 결제 이력 확인
+            const hasPaid = await this.checkPaymentHistory(userAddress);
+
+            if (hasPaid) {
+                console.log('[Payment] ✅ 결제 완료된 지갑');
+                this.showAlreadyPaidMessage(userAddress);
+                return;
+            }
+
+            // PKMON 잔액 확인
+            const balance = await this.checkPKMONBalance(userAddress);
+            const balanceFormatted = parseFloat(balance).toFixed(2);
+
+            console.log(`[Payment] PKMON 잔액: ${balanceFormatted}`);
+
+            if (parseFloat(balance) < this.paymentAmount) {
+                console.log('[Payment] ⚠️ 잔액 부족');
+                this.showInsufficientBalanceModal(balanceFormatted);
+            } else {
+                console.log('[Payment] 💰 잔액 충분 → 결제 모달 표시');
+                this.showPaymentModal(balanceFormatted, userAddress);
+            }
+
+        } catch (error) {
+            console.error('[Payment] 오류 발생:', error);
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // PKMON 잔액 확인
+    // ─────────────────────────────────────────
+    async checkPKMONBalance(userAddress) {
+        try {
+            const contract = new window.ethers.Contract(
+                this.tokenAddress,
+                this.erc20ABI,
+                new window.ethers.providers.Web3Provider(window.ethereum)
+            );
+
+            const decimals = await contract.decimals();
+            const balance = await contract.balanceOf(userAddress);
+            
+            return window.ethers.utils.formatUnits(balance, decimals);
+        } catch (error) {
+            console.error('[Payment] 잔액 확인 오류:', error);
+            return '0';
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // 결제 처리
+    // ─────────────────────────────────────────
+    async processPayment(userAddress) {
+        try {
+            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const contract = new window.ethers.Contract(
+                this.tokenAddress,
+                this.erc20ABI,
+                signer
+            );
+
+            const decimals = await contract.decimals();
+            const amount = window.ethers.utils.parseUnits(this.paymentAmount.toString(), decimals);
+
+            console.log(`[Payment] 결제 진행: ${this.paymentAmount} PKMON → ${this.receiverAddress}`);
+
+            const tx = await contract.transfer(this.receiverAddress, amount);
+            console.log('[Payment] 트랜잭션 전송:', tx.hash);
+
+            this.showProcessingModal(tx.hash);
+
+            const receipt = await tx.wait();
+            console.log('[Payment] ✅ 결제 완료:', receipt);
+
+            // 백엔드에 기록 (비동기)
+            await this.recordPaymentBackend(userAddress, tx.hash, this.paymentAmount);
+
+            // 로컬에도 저장
+            this.savePaymentHistoryLocal(userAddress);
+
+            this.showSuccessModal(tx.hash);
+
+        } catch (error) {
+            console.error('[Payment] 결제 실패:', error);
+            this.showErrorModal(error.message);
+        }
+    }
+
+    // ─────────────────────────────────────────
+    // UI 모달 관련 함수들
+    // ─────────────────────────────────────────
+
+    showPaymentModal(balance, userAddress) {
+        const modal = document.createElement('div');
+        modal.id = 'pkmonPaymentModal';
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1);">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-coins" style="font-size: 48px; color: white;"></i>
+                        </div>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 28px;">콘텐츠 접근을 위한 결제</h2>
+                        <p style="color: #94a3b8; margin: 0;">한 번 결제로 영구 접근 가능합니다</p>
+                    </div>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 25px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <span style="color: #cbd5e1;">결제 금액:</span>
+                            <span style="color: white; font-weight: bold; font-size: 20px;">${this.paymentAmount} PKMON</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+                            <span style="color: #cbd5e1;">보유 잔액:</span>
+                            <span style="color: #10B981; font-weight: bold;">${balance} PKMON</span>
+                        </div>
+                        <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: #cbd5e1;">받는 주소:</span>
+                            <span style="color: #60a5fa; font-size: 12px; font-family: monospace;">${this.receiverAddress.slice(0,6)}...${this.receiverAddress.slice(-4)}</span>
+                        </div>
+                    </div>
+                    
+                    <button id="confirmPaymentBtn" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                        <i class="fas fa-check-circle"></i> 결제하기
+                    </button>
+                    
+                    <p style="text-align: center; color: #64748b; font-size: 12px; margin-top: 20px;">
+                        <i class="fas fa-shield-alt"></i> 안전한 블록체인 결제
+                    </p>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        document.getElementById('confirmPaymentBtn').addEventListener('click', () => {
+            modal.remove();
+            this.processPayment(userAddress);
+        });
+    }
+
+    showInsufficientBalanceModal(balance) {
+        const modal = document.createElement('div');
+        modal.id = 'pkmonInsufficientModal';
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1);">
+                    <div style="text-align: center;">
+                        <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: white;"></i>
+                        </div>
+                        <h2 style="color: white; margin: 0 0 15px 0;">PKMON 잔액 부족</h2>
+                        <p style="color: #94a3b8; margin-bottom: 25px;">
+                            현재 잔액: <strong style="color: #f59e0b;">${balance} PKMON</strong><br>
+                            필요 금액: <strong style="color: white;">${this.paymentAmount} PKMON</strong>
+                        </p>
+                        
+                        <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
+                            <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 14px;">
+                                <i class="fas fa-shopping-cart" style="color: #10B981; margin-right: 8px;"></i>
+                                PKMON 토큰 구매 방법:
+                            </p>
+                            <ol style="color: #94a3b8; margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
+                                <li>DEX(탈중앙화 거래소)에서 구매</li>
+                                <li>공식 밈코인 사이트에서 구매</li>
+                                <li>Faucet에서 테스트넷 토큰 받기</li>
+                            </ol>
+                        </div>
+                        
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    showProcessingModal(txHash) {
+        const modal = document.createElement('div');
+        modal.id = 'pkmonProcessingModal';
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center;">
+                    <div class="spinner" style="width: 60px; height: 60px; margin: 0 auto 20px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #10B981; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                    <h2 style="color: white; margin: 0 0 10px 0;">결제 처리 중...</h2>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">블록체인에서 트랜잭션을 확인하고 있습니다</p>
+                    <p style="color: #60a5fa; font-size: 12px; font-family: monospace; word-break: break-all;">
+                        ${txHash}
+                    </p>
+                </div>
+            </div>
+            <style>
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    showSuccessModal(txHash) {
+        document.getElementById('pkmonProcessingModal')?.remove();
+
+        const modal = document.createElement('div');
+        modal.id = 'pkmonSuccessModal';
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center;">
+                    <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-check" style="font-size: 48px; color: white;"></i>
+                    </div>
+                    <h2 style="color: white; margin: 0 0 15px 0;">🎉 결제 완료!</h2>
+                    <p style="color: #94a3b8; margin-bottom: 20px;">이제 모든 콘텐츠를 자유롭게 이용하실 수 있습니다</p>
+                    <p style="color: #60a5fa; font-size: 11px; font-family: monospace; word-break: break-all; margin-bottom: 25px;">
+                        TX: ${txHash}
+                    </p>
+                    <button onclick="location.reload()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                        시작하기
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    showErrorModal(errorMessage) {
+        document.getElementById('pkmonProcessingModal')?.remove();
+
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center;">
+                    <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-times" style="font-size: 48px; color: white;"></i>
+                    </div>
+                    <h2 style="color: white; margin: 0 0 15px 0;">결제 실패</h2>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px; word-break: break-word;">
+                        ${errorMessage}
+                    </p>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                        확인
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    showAlreadyPaidMessage(userAddress) {
+        console.log(`[Payment] 이미 결제된 지갑입니다: ${userAddress}`);
+        
+        // 간단한 토스트 메시지만 표시 (5초 후 자동 사라짐)
+        const toast = document.createElement('div');
+        toast.innerHTML = `
+            <div style="position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; animation: slideIn 0.3s ease-out;">
+                <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
+                결제 완료된 지갑입니다
+            </div>
+            <style>
+                @keyframes slideIn {
+                    from { transform: translateX(400px); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.animation = 'slideOut 0.3s ease-in';
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    }
+
+    showInstallWalletModal() {
+        const modal = document.createElement('div');
+        modal.innerHTML = `
+            <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
+                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center;">
+                    <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-wallet" style="font-size: 48px; color: white;"></i>
+                    </div>
+                    <h2 style="color: white; margin: 0 0 15px 0;">지갑이 필요합니다</h2>
+                    <p style="color: #94a3b8; margin-bottom: 25px;">
+                        이 콘텐츠를 이용하려면 MetaMask 또는 Rabby 지갑이 필요합니다
+                    </p>
+                    <a href="https://metamask.io" target="_blank" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: bold; margin-bottom: 10px;">
+                        <i class="fab fa-firefox-browser"></i> MetaMask 설치
+                    </a>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+}
+
+// ─────────────────────────────────────────
+// 페이지 로드 시 자동 실행
+// ─────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+    // Ethers.js 로드 확인
+    if (typeof window.ethers === 'undefined') {
+        console.error('[PKMON] Ethers.js가 로드되지 않았습니다');
+        return;
+    }
+
+    const paymentSystem = new PKMONOneTimePayment();
+    window.pkmonPayment = paymentSystem;
+
+    // 지갑 연결 후 결제 확인
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', async (accounts) => {
+            if (accounts.length > 0) {
+                console.log('[Payment] 지갑 변경됨, 결제 상태 재확인');
+                await paymentSystem.checkAccess();
+            }
+        });
+    }
+
+    // 초기 실행
+    await paymentSystem.checkAccess();
+});
