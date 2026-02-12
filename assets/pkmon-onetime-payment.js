@@ -206,7 +206,7 @@ class PKMONOneTimePayment {
     // ─────────────────────────────────────────
     // 결제 처리
     // ─────────────────────────────────────────
-    async processPayment(userAddress) {
+    async processPayment(userAddress, targetUrl = null) {
         try {
             const provider = new window.ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
@@ -235,7 +235,7 @@ class PKMONOneTimePayment {
             // 로컬에도 저장
             this.savePaymentHistoryLocal(userAddress);
 
-            this.showSuccessModal(tx.hash);
+            this.showSuccessModal(tx.hash, targetUrl);
 
         } catch (error) {
             console.error('[Payment] 결제 실패:', error);
@@ -292,7 +292,9 @@ class PKMONOneTimePayment {
 
         document.getElementById('confirmPaymentBtn').addEventListener('click', () => {
             modal.remove();
-            this.processPayment(userAddress);
+            // ✅ BUG3 FIX: pendingTargetUrl이 있으면 결제 후 해당 URL로 이동
+            this.processPayment(userAddress, this.pendingTargetUrl);
+            this.pendingTargetUrl = null;
         });
     }
 
@@ -359,8 +361,21 @@ class PKMONOneTimePayment {
         document.body.appendChild(modal);
     }
 
-    showSuccessModal(txHash) {
+    showSuccessModal(txHash, targetUrl = null) {
         document.getElementById('pkmonProcessingModal')?.remove();
+        // ✅ BUG3 FIX: 결제 성공 후 이동할 URL 설정
+        window.__pkmonSuccessRedirect = () => {
+            if (targetUrl) {
+                window.location.href = targetUrl;
+            } else {
+                window.location.reload();
+            }
+        };
+        // 3초 후 자동 이동
+        setTimeout(() => {
+            if (targetUrl) window.location.href = targetUrl;
+            else window.location.reload();
+        }, 3000);
 
         const modal = document.createElement('div');
         modal.id = 'pkmonSuccessModal';
@@ -375,7 +390,7 @@ class PKMONOneTimePayment {
                     <p style="color: #60a5fa; font-size: 11px; font-family: monospace; word-break: break-all; margin-bottom: 25px;">
                         TX: ${txHash}
                     </p>
-                    <button onclick="location.reload()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                    <button onclick="window.__pkmonSuccessRedirect && window.__pkmonSuccessRedirect()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;">
                         시작하기
                     </button>
                 </div>
@@ -484,3 +499,4 @@ window.addEventListener('DOMContentLoaded', async () => {
     // 초기 실행
     await paymentSystem.checkAccess();
 });
+
