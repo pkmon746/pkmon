@@ -3,7 +3,7 @@ class WalletConnector {
     constructor() {
         this.currentAccount = null;
         this.provider = null;
-        this.chainId = 41454; // Monad Testnet
+        this.chainId = 143; // Monad Mainnet
 
         // ✅ BUG1 FIX: 명시적 로그아웃 플래그 (sessionStorage)
         this.LOGOUT_FLAG = 'pkmon_user_logged_out';
