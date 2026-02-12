@@ -227,8 +227,14 @@ class PKMONOneTimePayment {
     // ─────────────────────────────────────────
     async processPayment(userAddress, targetUrl = null) {
         try {
+            // ✅ [추가] 결제 진행 전 네트워크가 모나드인지 확인하고 전환 유도
+            if (window.walletConnector) {
+                await window.walletConnector.switchToMonad();
+            }
+
             const provider = new window.ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
+            // ... (이하 동일)
             const contract = new window.ethers.Contract(
                 this.tokenAddress,
                 this.erc20ABI,
