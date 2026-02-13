@@ -13,6 +13,7 @@ class BattleEngine {
 
         this.battleLog = [];
         this.turn = 0;
+        this.battle_id = null;
 
         // DOM Elements
         this.elements = {
@@ -55,6 +56,7 @@ class BattleEngine {
 
         // Reset state
         this.bets = { A: 0, B: 0 };
+        this.battle_id = `battle_${Date.now()}`;
         this.userBets = [];
         this.turn = 0;
         this.updatePoolDisplay();
@@ -320,27 +322,136 @@ class BattleEngine {
     }
 
     endBattle(winningTeam) {
-    clearInterval(this.combatInterval);
-    this.gameState = 'ENDED';
-    this.updateStatus(`🏆 TEAM ${winningTeam} WINS!`);
-    this.log(`🏆 TEAM ${winningTeam} VICTORIOUS! 🏆`);
-
-    this.triggerChat('win', { team: winningTeam });
-    setTimeout(() => this.triggerChat('win', { team: winningTeam }), 1000);
-    setTimeout(() => this.triggerChat('win', { team: winningTeam }), 2000);
-
-    if (this.userBets.length > 0) {
-        const userBet = this.userBets[this.userBets.length - 1];
-        const didWin = userBet.team === winningTeam;
-        const betAmount = parseFloat(userBet.amount);
-        const totalPool = 10000 + betAmount;
+        clearInterval(this.combatInterval);
+        this.gameState = 'ENDED';
+        this.updateStatus(`🏆 TEAM ${winningTeam} WINS!`);
+        this.log(`🏆 TEAM ${winningTeam} VICTORIOUS! 🏆`);
+        
+        this.triggerChat('win', { team: winningTeam });
+        setTimeout(() => this.triggerChat('win', { team: winningTeam }), 1000);
+        setTimeout(() => this.triggerChat('win', { team: winningTeam }), 2000);
+        
+        // 배틀 결과 기록 API
+        fetch('https://pkmon-payment-backend-api.onrender.com/api/battle-result', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                battle_id: this.battle_id,
+                winning_team: winningTeam,
+                pokemon_a: this.teamA[0]?.name || 'Unknown',
+                pokemon_b: this.teamB[0]?.name || 'Unknown',
+                timestamp: Date.now()
+            })
+        }).catch(e => console.warn('[Battle] Failed to record results:', e));
+        
+        // 승패 모달
+        
+        if (this.userBets.length > 0) {
+            const userBet = this.userBets[this.userBets.length - 1];
+            const didWin = userBet.team === winningTeam;
+            const betAmount = parseFloat(userBet.amount);
+            const totalPool = 10000 + betAmount;
 
         if (didWin) {
             setTimeout(() => this.showWinModal(betAmount), 1000);
-        } else {
+        } 
+        else {
             setTimeout(() => this.showLoseModal(betAmount, totalPool), 1000);
         }
     }
+
+    setTimeout(() => {
+        this.syncToUTC();
+        this.startNewCycle();
+    }, 15000);
+    }
+    
+    showWinModal(betAmount) {
+        const payout = (betAmount * 2).toFixed(2);
+        const modal = document.createElement('div');
+        modal.id = 'betResultModal';
+        modal.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(16,185,129,0.3);">
+                <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">🎉</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">Congratulations!</div>
+                <div style="font-size:1rem;color:#94a3b8;margin-bottom:0.5rem;">Bet placed successfully!</div>
+                <div style="font-size:1.1rem;color:#10B981;font-weight:700;margin-bottom:1.75rem;">+${payout} PKMON</div>
+                <button id="claimRewardBtn" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
+                    🏆 Claim Reward
+                </button>
+            </div>
+        </div>
+        `;
+        
+        document.body.appendChild(modal);
+        document.getElementById('claimRewardBtn').addEventListener('click', async () => {
+            modal.remove();
+            await this.claimReward(betAmount);
+        });
+    }
+    
+    showLoseModal(betAmount, totalPool) {
+        const modal = document.createElement('div');
+        modal.id = 'betResultModal';
+        modal.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
+                <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">That’s unfortunate,</div>
+                <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">Would you like to try again?</div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
+                    <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Bet Pool</div>
+                    <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} PKMON</div>
+                </div>
+                <button onclick="document.getElementById('betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
+            </div>
+        </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    async claimReward(betAmount) {
+        const payout = betAmount * 2;
+        try {
+            if (window.walletConnector) await window.walletConnector.switchToMonad();
+            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const userAddress = await signer.getAddress();
+            
+            const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ to: userAddress, amount: payout, timestamp: Date.now() })
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
+                const successModal = document.createElement('div');
+                successModal.innerHTML = `
+                <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+                    <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
+                        <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
+                        <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:1.5rem;">${payout} PKMON → Your Wallet</div>
+                        <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(successModal);
+            }
+            else {
+                throw new Error('Payout API failed');
+            }
+        }
+        catch (error) {
+            console.error('[Claim] failed:', error);
+            this.log(`❌ Claim failed: ${error.message}`);
+            alert('Claim failed. Please contact support.');
+    }
+}
 
     setTimeout(() => {
         this.syncToUTC();
@@ -492,7 +603,7 @@ async claimReward(betAmount) {
         this.triggerChat('bet_placed', { team, amount: parsedAmount });
     }
     catch (error) {
-        console.error('[Bet] 전송 실패:', error);
+        console.error('[Bet] Failed to send:', error);
         this.log(`❌ Bet failed: ${error.message}`);
     }
     }
