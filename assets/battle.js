@@ -665,6 +665,7 @@ async claimReward(betAmount) {
     }
 }
 
+
 // Betting
     async placeBet(team, amount, token) {
         const MAX_BET = 10;
