@@ -415,10 +415,90 @@
             background: var(--secondary-purple);
             border-radius: 3px;
         }
+
+        /* ===== Max Bet Modal ===== */
+        .maxbet-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+        .maxbet-overlay.active {
+            display: flex;
+        }
+        .maxbet-modal {
+            background: #0f1729;
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            width: 340px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+            animation: modalPop 0.25s ease;
+        }
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.85); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        .maxbet-icon {
+            width: 80px;
+            height: 80px;
+            background: #ef4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2rem;
+        }
+        .maxbet-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.75rem;
+        }
+        .maxbet-desc {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 1.75rem;
+        }
+        .maxbet-desc strong { color: #fbbf24; }
+        .maxbet-btn {
+            width: 100%;
+            padding: 0.85rem;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .maxbet-btn:hover { background: #dc2626; }
+        
     </style>
 </head>
 
 <body>
+
+    <!-- Max Bet Warning Modal -->
+    <div class="maxbet-overlay" id="maxBetOverlay">
+        <div class="maxbet-modal">
+            <div class="maxbet-icon">⚠️</div>
+            <div class="maxbet-title">Bet Limit Reached</div>
+            <div class="maxbet-desc">
+                The maximum bet amount is <strong>10 PKMON</strong>.<br>
+                Please enter an amount of 10 PKMON or less.
+            </div>
+            <button class="maxbet-btn" onclick="closeMaxBetModal()">Got it</button>
+        </div>
+    </div>
+
+    
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
@@ -579,23 +659,38 @@
     <script type="module" src="assets/battle.js"></script>
     <script>
         // Init logic will be in battle.js, but we can hook up UI events here if needed
+
+        function showMaxBetModal() {
+            document.getElementById('maxBetOverlay').classList.add('active');
+        }
+        
+        function closeMaxBetModal() {
+            document.getElementById('maxBetOverlay').classList.remove('active');
+        }
+        
+        document.getElementById('maxBetOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeMaxBetModal();
+        });
+        
         function placeBet(team) {
-            const amount = document.getElementById('betAmount').value;
-            const token = 'PKMON'; // Only PKMON betting allowed
+            const MAX_BET = 10;
+            const amount = parseFloat(document.getElementById('betAmount').value);
+            const token = 'PKMON';
             if (!amount || amount <= 0) {
                 alert("Please enter a valid bet amount!");
                 return;
             }
+            if (amount > MAX_BET) {
+                showMaxBetModal();
+                return;
+            }
             if (!window.walletConnected) {
                 alert("Please connect your wallet first!");
-                // Trigger wallet connect (simulated for now if not implemented fully)
                 document.getElementById('connectWalletBtn').click();
                 return;
             }
-
-            // Call Battle Engine betting function
             if (window.battleEngine) {
-                window.battleEngine.placeBet(team, amount, token);
+                window.battleEngine.placeBet(team, amount.toString(), token);
             }
         }
     </script>
