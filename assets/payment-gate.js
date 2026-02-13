@@ -8,10 +8,6 @@
 async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
     console.log(`[PKMON Payment Gate] 페이지 접근 시도: ${targetUrl}`);
     
-    // ✅ FIX: 사이트에서 명시적으로 연결 승인된 지갑만 허용
-    // eth_accounts / eth_requestAccounts 직접 호출 금지
-    // → walletConnector.currentAccount 만을 단일 진실 출처로 사용
-
     // 1. 로그아웃 상태 체크
     if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
         showWalletAlert('먼저 지갑을 연결해주세요!\n우측 상단 "Connect Wallet" 버튼을 클릭하세요.');
@@ -19,19 +15,18 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
         return;
     }
 
-    // 2. 이 사이트에서 Connect Wallet을 누른 적 있는지 확인
-    if (localStorage.getItem('pkmon_wallet_connected') !== 'true') {
-        showWalletAlert('먼저 지갑을 연결해주세요!\n우측 상단 "Connect Wallet" 버튼을 클릭하세요.');
-        pulseWalletBtn();
-        return;
-    }
-
-    // 3. walletConnector가 실제로 계정을 들고 있는지 확인
+    // 2. walletConnector가 실제로 계정을 들고 있는지 확인
     const account = window.walletConnector && window.walletConnector.currentAccount;
     if (!account) {
         showWalletAlert('먼저 지갑을 연결해주세요!\n우측 상단 "Connect Wallet" 버튼을 클릭하세요.');
         pulseWalletBtn();
         return;
+    }
+
+    // ✅ 지갑이 연결되어 있으면 localStorage 플래그 자동 설정
+    if (localStorage.getItem('pkmon_wallet_connected') !== 'true') {
+        console.log('[PKMON Payment Gate] localStorage 플래그 자동 설정');
+        localStorage.setItem('pkmon_wallet_connected', 'true');
     }
 
     if (!window.pkmonPayment) {
@@ -42,8 +37,15 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
     try {
         console.log(`[PKMON Payment Gate] 결제 확인 중... 지갑: ${account.slice(0, 10)}...`);
         
-        // 결제 이력 확인 (백엔드 → 로컬 순서)
-        const isPaid = await window.pkmonPayment.checkPaymentHistory(account);
+        // ✅ 타임아웃 추가: 5초 안에 응답 없으면 에러
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('결제 확인 시간 초과')), 5000)
+        );
+        
+        const isPaid = await Promise.race([
+            window.pkmonPayment.checkPaymentHistory(account),
+            timeoutPromise
+        ]);
         
         console.log(`[PKMON Payment Gate] 결제 상태: ${isPaid ? '✅ 결제 완료' : '❌ 미결제'}`);
 
@@ -58,7 +60,22 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
         }
     } catch (error) {
         console.error('[PKMON Payment Gate] 오류:', error);
-        alert('결제 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+        
+        // 타임아웃 또는 네트워크 오류 시 로컬 확인으로 폴백
+        if (error.message === '결제 확인 시간 초과' || error.message.includes('fetch')) {
+            console.warn('[PKMON Payment Gate] 백엔드 타임아웃 → 로컬 확인 시도');
+            const localPaid = window.pkmonPayment.checkPaymentHistoryLocal(account);
+            
+            if (localPaid) {
+                console.log('[PKMON Payment Gate] ✅ 로컬 결제 이력 확인 → 접근 허용');
+                window.location.href = targetUrl;
+            } else {
+                console.log('[PKMON Payment Gate] ❌ 로컬 결제 이력 없음 → 결제 게이트 표시');
+                await runPaymentGate(account, targetUrl);
+            }
+        } else {
+            alert('결제 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+        }
     }
 }
 
