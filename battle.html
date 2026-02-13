@@ -658,6 +658,35 @@
     <script type="module" src="assets/trainers.js"></script>
     <script type="module" src="assets/battle.js"></script>
     <script>
+        // ✅ Custom Alert Modal Function
+        function showCustomAlert(message) {
+            const existing = document.getElementById('customAlertModal');
+            if (existing) existing.remove();
+            
+            const modal = document.createElement('div');
+            modal.id = 'customAlertModal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 99999; display: flex; justify-content: center; align-items: center; animation: fadeIn 0.2s;">
+                    <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px 40px; border-radius: 16px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1); text-align: center;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 36px; color: white;"></i>
+                        </div>
+                        <p style="color: white; font-size: 16px; margin-bottom: 25px; line-height: 1.6;">${message}</p>
+                        <button onclick="this.closest('#customAlertModal').remove()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                            OK
+                        </button>
+                    </div>
+                </div>
+                <style>
+                    @keyframes fadeIn {
+                        from { opacity: 0; }
+                        to { opacity: 1; }
+                    }
+                </style>
+            `;
+            document.body.appendChild(modal);
+        }
+        
         // Init logic will be in battle.js, but we can hook up UI events here if needed
 
         function showMaxBetModal() {
@@ -676,19 +705,37 @@
             const MAX_BET = 10;
             const amount = parseFloat(document.getElementById('betAmount').value);
             const token = 'PKMON';
+            
             if (!amount || amount <= 0) {
-                alert("Please enter a valid bet amount!");
+                showCustomAlert("Please enter a valid bet amount!");
                 return;
             }
+            
             if (amount > MAX_BET) {
                 showMaxBetModal();
                 return;
             }
-            if (!window.walletConnected) {
-                alert("Please connect your wallet first!");
-                document.getElementById('connectWalletBtn').click();
+            
+            // ✅ 지갑 연결 확인 개선
+            const isWalletConnected = window.walletConnector && window.walletConnector.currentAccount;
+            
+            if (!isWalletConnected) {
+                showCustomAlert("Please connect your wallet first!");
+                // 1초 후 지갑 연결 버튼 강조
+                setTimeout(() => {
+                    const walletBtn = document.getElementById('connectWalletBtn');
+                    if (walletBtn) {
+                        walletBtn.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.6)';
+                        walletBtn.style.transform = 'scale(1.05)';
+                        setTimeout(() => {
+                            walletBtn.style.boxShadow = '';
+                            walletBtn.style.transform = '';
+                        }, 2000);
+                    }
+                }, 300);
                 return;
             }
+            
             if (window.battleEngine) {
                 window.battleEngine.placeBet(team, amount.toString(), token);
             }
