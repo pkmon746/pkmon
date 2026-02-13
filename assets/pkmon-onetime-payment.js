@@ -55,11 +55,18 @@ class PKMONOneTimePayment {
         const addr = userAddress.toLowerCase();
 
         try {
+            // ✅ 타임아웃이 있는 fetch (5초)
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
             // 백엔드 API 확인 시도
             const response = await fetch(`${this.apiUrl}/check-payment/${addr}`, {
                 method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
 
             if (response.ok) {
                 const data = await response.json();
@@ -71,9 +78,15 @@ class PKMONOneTimePayment {
                 }
                 
                 return data.hasPaid;
+            } else {
+                console.warn(`[Payment] 백엔드 응답 오류: ${response.status}`);
             }
         } catch (error) {
-            console.warn('[Payment] 백엔드 연결 실패, 로컬 저장소 사용:', error.message);
+            if (error.name === 'AbortError') {
+                console.warn('[Payment] 백엔드 타임아웃 (5초 초과), 로컬 저장소 사용');
+            } else {
+                console.warn('[Payment] 백엔드 연결 실패, 로컬 저장소 사용:', error.message);
+            }
         }
 
         // 백엔드 실패 시 로컬스토리지 확인
