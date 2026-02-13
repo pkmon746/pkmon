@@ -4,18 +4,16 @@ import CONFIG from './config.js';
 
 class BattleEngine {
     constructor() {
-        this.gameState = 'WAITING'; // WAITING, BETTING, BATTLING, ENDED
+        this.gameState = 'WAITING';
         this.timer = 0;
         this.teamA = [];
         this.teamB = [];
         this.bets = { A: 0, B: 0 };
-        this.userBets = []; // { team, amount, token }
-
+        this.userBets = [];
         this.battleLog = [];
         this.turn = 0;
         this.battle_id = null;
 
-        // DOM Elements
         this.elements = {
             timer: document.getElementById('battleCountdown'),
             status: document.getElementById('battleStatus'),
@@ -31,30 +29,19 @@ class BattleEngine {
 
     init() {
         console.log("🎮 Battle Engine Initialized");
-
-        // Calculate time until next battle (UTC :00 or :30)
         this.syncToUTC();
-
-        // Start the global timer loop
         setInterval(() => this.tick(), 1000);
-
-        // Start Chat Simulation (increased frequency)
-        setInterval(() => this.processChat(), 3000); // More frequent chat
-
-        // Initial setup
+        setInterval(() => this.processChat(), 3000);
         this.startNewCycle();
     }
 
     syncToUTC() {
-        // Fixed 2-minute battle cycles
-        this.timer = 2 * 60; // 2 minutes
+        this.timer = 2 * 60;
         console.log(`⏰ Next battle in 2 minutes`);
     }
 
     async startNewCycle() {
         this.gameState = 'BETTING';
-
-        // Reset state
         this.bets = { A: 0, B: 0 };
         this.battle_id = `battle_${Date.now()}`;
         this.userBets = [];
@@ -62,11 +49,7 @@ class BattleEngine {
         this.updatePoolDisplay();
         this.log("🔥 New Battle Cycle Started! Place your bets!");
         this.updateStatus("BETS OPEN - MATCHMAKING");
-
-        // Fetch Pokemon IMMEDIATELY so users can see them
         await this.fetchTeams();
-
-        // Announce the matchup
         this.log(`⚔️ MATCHUP: ${this.teamA[0].name} vs ${this.teamB[0].name}`);
         this.triggerChat('matchup', {});
         this.triggerChat('idle', {});
@@ -74,21 +57,16 @@ class BattleEngine {
 
     async fetchTeams() {
         try {
-            // Random IDs between 1 and 1025
             const ids = Array.from({ length: 4 }, () => Math.floor(Math.random() * 1025) + 1);
-
-            // Fetch data from PokeAPI (including moves)
             const promises = ids.map(id =>
-                fetch(`https://pokeapi.co/api/v2/pokemon/${id}`)
-                    .then(r => r.json())
+                fetch(`https://pokeapi.co/api/v2/pokemon/${id}`).then(r => r.json())
             );
             const results = await Promise.all(promises);
 
-            // Format Pokemon Data with moves
             const combatants = results.map(p => ({
                 name: p.name.toUpperCase(),
                 sprite: p.sprites.front_default || p.sprites.other['official-artwork'].front_default,
-                hp: p.stats[0].base_stat * 3, // Boost HP for longer battles
+                hp: p.stats[0].base_stat * 3,
                 maxHp: p.stats[0].base_stat * 3,
                 attack: p.stats[1].base_stat,
                 defense: p.stats[2].base_stat,
@@ -103,12 +81,9 @@ class BattleEngine {
 
             this.teamA = [combatants[0], combatants[1]];
             this.teamB = [combatants[2], combatants[3]];
-
-            // IMMEDIATELY render them
             this.renderTeams();
 
             console.log("✅ Pokemon loaded:", this.teamA[0].name, "vs", this.teamB[0].name);
-            console.log("   Moves:", this.teamA[0].moves.map(m => m.name).join(', '));
         } catch (error) {
             console.error("❌ Failed to fetch Pokemon:", error);
             this.log("⚠️ Failed to load Pokemon. Retrying...");
@@ -116,27 +91,25 @@ class BattleEngine {
         }
     }
 
-   renderTeams() {
-    console.log('[Render] Starting team render...');
-    console.log('[Render] Team A:', this.teamA);
-    console.log('[Render] Team B:', this.teamB);
+    renderTeams() {
+        console.log('[Render] Starting team render...');
+        console.log('[Render] Team A:', this.teamA);
+        console.log('[Render] Team B:', this.teamB);
 
-    // Render Team A
-    if (this.teamA && this.teamA.length > 0 && this.teamA[0]) {
-        console.log('[Render] Rendering Team A:', this.teamA[0].name);
-        this.updateUnitDOM('teamA', this.teamA[0]);
-    } else {
-        console.error('[Render] Team A data missing!');
-    }
+        if (this.teamA && this.teamA.length > 0 && this.teamA[0]) {
+            console.log('[Render] Rendering Team A:', this.teamA[0].name);
+            this.updateUnitDOM('teamA', this.teamA[0]);
+        } else {
+            console.error('[Render] Team A data missing!');
+        }
 
-    // Render Team B
-    if (this.teamB && this.teamB.length > 0 && this.teamB[0]) {
-        console.log('[Render] Rendering Team B:', this.teamB[0].name);
-        this.updateUnitDOM('teamB', this.teamB[0]);
-    } else {
-        console.error('[Render] Team B data missing!');
+        if (this.teamB && this.teamB.length > 0 && this.teamB[0]) {
+            console.log('[Render] Rendering Team B:', this.teamB[0].name);
+            this.updateUnitDOM('teamB', this.teamB[0]);
+        } else {
+            console.error('[Render] Team B data missing!');
+        }
     }
-}
 
     updateUnitDOM(teamId, pokemon) {
         const el = document.getElementById(teamId);
@@ -145,21 +118,30 @@ class BattleEngine {
             return;
         }
 
-        // Update name
+        console.log(`[Render] Updating ${teamId} with:`, pokemon.name);
+
         const nameEl = el.querySelector('.name');
         if (nameEl) {
-            nameEl.textContent = pokemon.name;
+            nameEl.textContent = pokemon.name || 'UNKNOWN';
             nameEl.style.opacity = '1';
+            nameEl.style.display = 'block';
+        } else {
+            console.error(`[Render] Name element not found for ${teamId}`);
         }
 
-        // Update sprite
         const sprite = el.querySelector('.pokemon-sprite');
         if (sprite) {
-            sprite.src = pokemon.sprite;
+            sprite.src = pokemon.sprite || '';
             sprite.style.opacity = '1';
+            sprite.style.display = 'block';
+            sprite.onerror = () => {
+                console.error(`[Render] Failed to load sprite for ${pokemon.name}`);
+                sprite.style.display = 'none';
+            };
+        } else {
+            console.error(`[Render] Sprite element not found for ${teamId}`);
         }
 
-        // Reset Health Bar
         const hpBar = el.querySelector('.hp-bar');
         if (hpBar) {
             hpBar.style.width = '100%';
@@ -168,10 +150,8 @@ class BattleEngine {
     }
 
     tick() {
-        // Timer Logic
         this.timer--;
         if (this.timer < 0) {
-            // Resync to UTC
             this.syncToUTC();
             return;
         }
@@ -180,7 +160,6 @@ class BattleEngine {
         const secs = this.timer % 60;
         this.elements.timer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-        // Phase Transitions - use <= to be safe
         if (this.gameState === 'BETTING' && this.timer <= 0) {
             this.startBattle();
         }
@@ -191,13 +170,10 @@ class BattleEngine {
         this.updateStatus("⚔️ BATTLE IN PROGRESS");
         this.log("⚠️ BETTING CLOSED - BATTLE COMMENCING ⚠️");
         this.log(`🔥 ${this.teamA[0].name} (HP: ${this.teamA[0].hp}) vs ${this.teamB[0].name} (HP: ${this.teamB[0].hp})`);
-
-        // Start Combat Loop
-        this.combatInterval = setInterval(() => this.combatStep(), 2500); // Slightly slower for readability
+        this.combatInterval = setInterval(() => this.combatStep(), 2500);
     }
 
     combatStep() {
-        // Simple 1v1 logic for MVP (Team Leader vs Team Leader)
         const p1 = this.teamA[0];
         const p2 = this.teamB[0];
 
@@ -206,19 +182,15 @@ class BattleEngine {
             return;
         }
 
-        // Determine Turn (Speed-based)
         this.turn++;
         const attacker = p1.speed >= p2.speed ? (this.turn % 2 !== 0 ? p1 : p2) : (this.turn % 2 !== 0 ? p2 : p1);
         const defender = attacker === p1 ? p2 : p1;
-        const attackerTeam = attacker === p1 ? 'A' : 'B';
         const defenderTeam = attacker === p1 ? 'teamB' : 'teamA';
 
-        // Select a random move
         const move = attacker.moves && attacker.moves.length > 0
             ? attacker.moves[Math.floor(Math.random() * attacker.moves.length)]
             : { name: 'TACKLE' };
 
-        // Damage Calc with type effectiveness
         const crit = Math.random() < 0.1;
         const typeBonus = this.checkTypeEffectiveness(attacker.types, defender.types);
         let damage = Math.floor((attacker.attack / defender.defense) * 20 * typeBonus) + 5;
@@ -230,7 +202,6 @@ class BattleEngine {
             defender.alive = false;
         }
 
-        // Vivid Battle Log with move name
         let logMsg = `⚡ ${attacker.name} used ${move.name}!`;
         this.log(logMsg);
 
@@ -239,22 +210,13 @@ class BattleEngine {
         if (typeBonus < 1) this.log('   🛡️ Not very effective...');
         this.log(`   └─ ${defender.name} took ${damage} damage! (HP: ${defender.hp}/${defender.maxHp})`);
 
-        // Update UI with visual effect
         this.updateHpBar(defenderTeam, defender);
         this.showAttackEffect(defenderTeam, crit);
 
-        // Chat Reactions (more frequent)
-        if (crit) {
-            this.triggerChat('crit_hit', { damage: damage });
-        }
-        if (typeBonus > 1) {
-            this.triggerChat('super_effective', {});
-        }
-        if (move.name) {
-            this.triggerChat('move_used', { move: move.name });
-        }
+        if (crit) this.triggerChat('crit_hit', { damage: damage });
+        if (typeBonus > 1) this.triggerChat('super_effective', {});
+        if (move.name) this.triggerChat('move_used', { move: move.name });
 
-        // Low HP warning
         const hpPercent = (defender.hp / defender.maxHp) * 100;
         if (hpPercent < 30 && hpPercent > 0) {
             this.triggerChat('low_hp', {});
@@ -265,7 +227,6 @@ class BattleEngine {
         const el = document.getElementById(targetTeamId);
         if (!el) return;
 
-        // Flash effect
         el.style.transition = 'filter 0.2s';
         el.style.filter = isCrit ? 'brightness(2) saturate(2)' : 'brightness(1.5)';
 
@@ -273,7 +234,6 @@ class BattleEngine {
             el.style.filter = 'brightness(1)';
         }, 200);
 
-        // Shake animation
         const sprite = el.querySelector('.pokemon-sprite');
         if (sprite) {
             sprite.style.animation = 'shake 0.3s';
@@ -284,7 +244,6 @@ class BattleEngine {
     }
 
     checkTypeEffectiveness(attackerTypes, defenderTypes) {
-        // Expanded type chart
         const chart = {
             'fire': { 'grass': 2, 'ice': 2, 'bug': 2, 'steel': 2, 'water': 0.5, 'fire': 0.5, 'rock': 0.5, 'dragon': 0.5 },
             'water': { 'fire': 2, 'ground': 2, 'rock': 2, 'grass': 0.5, 'water': 0.5, 'dragon': 0.5 },
@@ -341,7 +300,6 @@ class BattleEngine {
         setTimeout(() => this.triggerChat('win', { team: winningTeam }), 1000);
         setTimeout(() => this.triggerChat('win', { team: winningTeam }), 2000);
         
-        // 배틀 결과 기록 API
         fetch('https://pkmon-payment-backend-api.onrender.com/api/battle-result', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -354,26 +312,23 @@ class BattleEngine {
             })
         }).catch(e => console.warn('[Battle] Failed to record results:', e));
         
-        // 승패 모달
-        
         if (this.userBets.length > 0) {
             const userBet = this.userBets[this.userBets.length - 1];
             const didWin = userBet.team === winningTeam;
             const betAmount = parseFloat(userBet.amount);
             const totalPool = 10000 + betAmount;
 
-        if (didWin) {
-            setTimeout(() => this.showWinModal(betAmount), 1000);
-        } 
-        else {
-            setTimeout(() => this.showLoseModal(betAmount, totalPool), 1000);
+            if (didWin) {
+                setTimeout(() => this.showWinModal(betAmount), 1000);
+            } else {
+                setTimeout(() => this.showLoseModal(betAmount, totalPool), 1000);
+            }
         }
-    }
 
-    setTimeout(() => {
-        this.syncToUTC();
-        this.startNewCycle();
-    }, 15000);
+        setTimeout(() => {
+            this.syncToUTC();
+            this.startNewCycle();
+        }, 15000);
     }
     
     showWinModal(betAmount) {
@@ -381,20 +336,18 @@ class BattleEngine {
         const modal = document.createElement('div');
         modal.id = 'betResultModal';
         modal.innerHTML = `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(16,185,129,0.3);">
-                <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">🎉</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">Congratulations!</div>
-                <div style="font-size:1rem;color:#94a3b8;margin-bottom:0.5rem;">Bet placed successfully!</div>
-                <div style="font-size:1.1rem;color:#10B981;font-weight:700;margin-bottom:1.75rem;">+${payout} PKMON</div>
-                <button id="claimRewardBtn" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
-                    🏆 Claim Reward
-                </button>
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(16,185,129,0.3);">
+                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">🎉</div>
+                    <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">Congratulations!</div>
+                    <div style="font-size:1rem;color:#94a3b8;margin-bottom:0.5rem;">Bet placed successfully!</div>
+                    <div style="font-size:1.1rem;color:#10B981;font-weight:700;margin-bottom:1.75rem;">+${payout} PKMON</div>
+                    <button id="claimRewardBtn" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">🏆 Claim Reward</button>
+                </div>
             </div>
-        </div>
         `;
-        
         document.body.appendChild(modal);
+
         document.getElementById('claimRewardBtn').addEventListener('click', async () => {
             modal.remove();
             await this.claimReward(betAmount);
@@ -405,364 +358,194 @@ class BattleEngine {
         const modal = document.createElement('div');
         modal.id = 'betResultModal';
         modal.innerHTML = `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
-                <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">That’s unfortunate,</div>
-                <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">Would you like to try again?</div>
-                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
-                    <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Bet Pool</div>
-                    <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} PKMON</div>
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
+                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
+                    <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">Better luck next time!</div>
+                    <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">Try again!</div>
+                    <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
+                        <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Bet Pool</div>
+                        <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} PKMON</div>
+                    </div>
+                    <button onclick="document.getElementById('betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
                 </div>
-                <button onclick="document.getElementById('betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
             </div>
-        </div>
         `;
-        
         document.body.appendChild(modal);
     }
     
     async claimReward(betAmount) {
-    const payout = betAmount * 2;
-    const API_BASE = 'https://pkmon-payment-backend-api.onrender.com';
+        const payout = betAmount * 2;
+        const API_BASE = 'https://pkmon-payment-backend-api.onrender.com';
 
-    try {
-        // Check wallet connection
-        if (!window.ethereum) {
-            throw new Error('MetaMask not installed');
-        }
-
-        if (window.walletConnector) {
-            await window.walletConnector.switchToMonad();
-        }
-
-        const provider = new window.ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const userAddress = await signer.getAddress();
-
-        console.log('[Claim] User address:', userAddress);
-        console.log('[Claim] Payout amount:', payout);
-
-        // Show loading modal
-        const loadingModal = document.createElement('div');
-        loadingModal.id = 'loadingModal';
-        loadingModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
-                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">⏳</div>
-                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Processing...</div>
-                    <div style="color:#94a3b8;font-size:0.9rem;">Sending ${payout} PKMON to your wallet</div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(loadingModal);
-
-        // First, check if backend is alive
-        console.log('[Claim] Checking backend health...');
         try {
-            const healthResponse = await fetch(`${API_BASE}/api/health`, {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            if (!healthResponse.ok) {
-                throw new Error('Backend server is not responding');
+            if (!window.ethereum) {
+                throw new Error('MetaMask not installed');
             }
-            
-            const healthData = await healthResponse.json();
-            console.log('[Claim] Backend health:', healthData);
-        } catch (healthError) {
-            console.error('[Claim] Backend health check failed:', healthError);
-            loadingModal.remove();
-            throw new Error('Backend server is unavailable. Please try again in a moment.');
-        }
 
-        // Call payout API
-        console.log('[Claim] Calling payout API...');
-        const response = await fetch(`${API_BASE}/api/payout`, {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                to: userAddress,
-                amount: payout,
-                timestamp: Date.now()
-            })
-        });
+            if (window.walletConnector) {
+                await window.walletConnector.switchToMonad();
+            }
 
-        console.log('[Claim] API response status:', response.status);
+            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const userAddress = await signer.getAddress();
 
-        // Get response text
-        const responseText = await response.text();
-        console.log('[Claim] API response body:', responseText);
+            console.log('[Claim] User address:', userAddress);
+            console.log('[Claim] Payout amount:', payout);
 
-        // Remove loading modal
-        loadingModal.remove();
+            const loadingModal = document.createElement('div');
+            loadingModal.id = 'loadingModal';
+            loadingModal.innerHTML = `
+                <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
+                    <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">⏳</div>
+                        <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Processing...</div>
+                        <div style="color:#94a3b8;font-size:0.9rem;">Sending ${payout} PKMON to your wallet</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loadingModal);
 
-        if (!response.ok) {
-            let errorData;
+            console.log('[Claim] Checking backend health...');
             try {
-                errorData = JSON.parse(responseText);
-            } catch (e) {
-                errorData = { error: responseText || 'Unknown error' };
+                const healthResponse = await fetch(`${API_BASE}/api/health`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!healthResponse.ok) {
+                    throw new Error('Backend server is not responding');
+                }
+                
+                const healthData = await healthResponse.json();
+                console.log('[Claim] Backend health:', healthData);
+            } catch (healthError) {
+                console.error('[Claim] Backend health check failed:', healthError);
+                loadingModal.remove();
+                throw new Error('Backend server is unavailable. Please try again in a moment.');
             }
-            console.error('[Claim] API error:', errorData);
+
+            console.log('[Claim] Calling payout API...');
+            const response = await fetch(`${API_BASE}/api/payout`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    to: userAddress,
+                    amount: payout,
+                    timestamp: Date.now()
+                })
+            });
+
+            console.log('[Claim] API response status:', response.status);
+
+            const responseText = await response.text();
+            console.log('[Claim] API response body:', responseText);
+
+            loadingModal.remove();
+
+            if (!response.ok) {
+                let errorData;
+                try {
+                    errorData = JSON.parse(responseText);
+                } catch (e) {
+                    errorData = { error: responseText || 'Unknown error' };
+                }
+                console.error('[Claim] API error:', errorData);
+                throw new Error(errorData.error || `Server error (${response.status})`);
+            }
+
+            const data = JSON.parse(responseText);
+            console.log('[Claim] Success:', data);
+
+            this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
+
+            const successModal = document.createElement('div');
+            successModal.innerHTML = `
+                <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
+                    <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
+                        <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
+                        <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">${payout} PKMON</div>
+                        <div style="color:#64748b;font-size:0.85rem;margin-bottom:1.5rem;">TX: ${data.txHash?.slice(0,10)}...${data.txHash?.slice(-8)}</div>
+                        <button onclick="this.closest('div[style*=z-index]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(successModal);
+
+        } catch (error) {
+            console.error('[Claim] Failed:', error);
+            console.error('[Claim] Error stack:', error.stack);
+            this.log(`❌ Claim failed: ${error.message}`);
             
-            // Show specific error message
-            throw new Error(errorData.error || `Server error (${response.status})`);
+            const existingLoading = document.getElementById('loadingModal');
+            if (existingLoading) existingLoading.remove();
+            
+            const errorModal = document.createElement('div');
+            errorModal.innerHTML = `
+                <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
+                    <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">❌</div>
+                        <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Claim Failed</div>
+                        <div style="color:#94a3b8;font-size:0.85rem;margin-bottom:1rem;word-break:break-word;">${error.message}</div>
+                        <div style="color:#64748b;font-size:0.75rem;margin-bottom:1.5rem;">Check console (F12) for details</div>
+                        <button onclick="this.closest('div[style*=z-index]').parentElement.remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(errorModal);
         }
-
-        const data = JSON.parse(responseText);
-        console.log('[Claim] Success:', data);
-
-        this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
-
-        // Success modal
-        const successModal = document.createElement('div');
-        successModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
-                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
-                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
-                    <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">${payout} PKMON</div>
-                    <div style="color:#64748b;font-size:0.85rem;margin-bottom:1.5rem;">TX: ${data.txHash?.slice(0,10)}...${data.txHash?.slice(-8)}</div>
-                    <button onclick="this.closest('div[style*=z-index]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(successModal);
-
-    } catch (error) {
-        console.error('[Claim] Failed:', error);
-        console.error('[Claim] Error stack:', error.stack);
-        this.log(`❌ Claim failed: ${error.message}`);
-        
-        // Remove loading modal if still present
-        const existingLoading = document.getElementById('loadingModal');
-        if (existingLoading) existingLoading.remove();
-        
-        // Error modal with detailed message
-        const errorModal = document.createElement('div');
-        errorModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
-                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
-                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">❌</div>
-                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Claim Failed</div>
-                    <div style="color:#94a3b8;font-size:0.85rem;margin-bottom:1rem;word-break:break-word;">${error.message}</div>
-                    <div style="color:#64748b;font-size:0.75rem;margin-bottom:1.5rem;">Check console (F12) for details</div>
-                    <button onclick="this.closest('div[style*=z-index]').parentElement.remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(errorModal);
     }
-}
 
-    setTimeout(() => {
-        this.syncToUTC();
-        this.startNewCycle();
-    }, 15000);
-}
-
-showWinModal(betAmount) {
-    const payout = (betAmount * 2).toFixed(2);
-    const modal = document.createElement('div');
-    modal.id = 'betResultModal';
-    modal.innerHTML = `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(16,185,129,0.3);">
-                <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">🎉</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">축하합니다!</div>
-                <div style="font-size:1rem;color:#94a3b8;margin-bottom:0.5rem;">베팅에 성공하셨습니다!</div>
-                <div style="font-size:1.1rem;color:#10B981;font-weight:700;margin-bottom:1.75rem;">+${payout} PKMON</div>
-                <button id="claimRewardBtn" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
-                    🏆 Claim Reward
-                </button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('claimRewardBtn').addEventListener('click', async () => {
-        modal.remove();
-        await this.claimReward(betAmount);
-    });
-}
-
-showLoseModal(betAmount, totalPool) {
-    const modal = document.createElement('div');
-    modal.id = 'betResultModal';
-    modal.innerHTML = `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
-                <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">아쉽네요,</div>
-                <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">다시 도전해보실래요?</div>
-                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
-                    <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Bet Pool</div>
-                    <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} PKMON</div>
-                </div>
-                <button onclick="document.getElementById('betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
-                    Close
-                </button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-async claimReward(betAmount) {
-    const payout = betAmount * 2;
-    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
-
-    try {
-        // Check wallet connection
-        if (!window.ethereum) {
-            throw new Error('MetaMask not installed');
-        }
-
-        if (window.walletConnector) {
-            await window.walletConnector.switchToMonad();
-        }
-
-        const provider = new window.ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const userAddress = await signer.getAddress();
-
-        console.log('[Claim] User address:', userAddress);
-        console.log('[Claim] Payout amount:', payout);
-
-        // Show loading modal
-        const loadingModal = document.createElement('div');
-        loadingModal.id = 'loadingModal';
-        loadingModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">⏳</div>
-                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Processing...</div>
-                    <div style="color:#94a3b8;font-size:0.9rem;">Sending ${payout} PKMON to your wallet</div>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(loadingModal);
-
-        // Call backend API
-        const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                to: userAddress,
-                amount: payout,
-                timestamp: Date.now()
-            })
-        });
-
-        // Remove loading modal
-        loadingModal.remove();
-
-        console.log('[Claim] API response status:', response.status);
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('[Claim] API error:', errorData);
-            throw new Error(errorData.error || 'Payout API failed');
-        }
-
-        const data = await response.json();
-        console.log('[Claim] Success:', data);
-
-        this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
-
-        // Success modal
-        const successModal = document.createElement('div');
-        successModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
-                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
-                    <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">${payout} PKMON</div>
-                    <div style="color:#64748b;font-size:0.85rem;margin-bottom:1.5rem;">TX: ${data.txHash?.slice(0,10)}...${data.txHash?.slice(-8)}</div>
-                    <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(successModal);
-
-    } catch (error) {
-        console.error('[Claim] Failed:', error);
-        this.log(`❌ Claim failed: ${error.message}`);
-        
-        // Error modal
-        const errorModal = document.createElement('div');
-        errorModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
-                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">❌</div>
-                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Claim Failed</div>
-                    <div style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;">${error.message}</div>
-                    <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(errorModal);
-    }
-}
-
-// Betting
     async placeBet(team, amount, token) {
         const MAX_BET = 10;
         if (this.gameState !== 'BETTING') {
             alert("Betting is closed! Battle is in progress.");
-        return;
+            return;
         }
 
-    const parsedAmount = parseFloat(amount);
-    if (parsedAmount > MAX_BET) return;
+        const parsedAmount = parseFloat(amount);
+        if (parsedAmount > MAX_BET) return;
 
-    // 온체인 PKMON 전송
-    const BET_RECEIVER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
-    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
-    const ERC20_ABI = [
-        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
-        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
-    ];
+        const BET_RECEIVER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
+        const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        const ERC20_ABI = [
+            { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
+            { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
+        ];
 
-    try {
-        if (window.walletConnector) await window.walletConnector.switchToMonad();
+        try {
+            if (window.walletConnector) await window.walletConnector.switchToMonad();
 
-        const provider = new window.ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
-        const decimals = await contract.decimals();
-        const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), decimals);
+            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+            const decimals = await contract.decimals();
+            const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), decimals);
 
-        const tx = await contract.transfer(BET_RECEIVER, amountWei);
-        this.log(`⏳ Sending ${parsedAmount} PKMON... TX: ${tx.hash.slice(0,10)}...`);
+            const tx = await contract.transfer(BET_RECEIVER, amountWei);
+            this.log(`⏳ Sending ${parsedAmount} PKMON... TX: ${tx.hash.slice(0,10)}...`);
 
-        await tx.wait();
-        this.log(`✅ Bet confirmed! ${parsedAmount} PKMON on Team ${team}`);
+            await tx.wait();
+            this.log(`✅ Bet confirmed! ${parsedAmount} PKMON on Team ${team}`);
 
-        this.bets[team] += parsedAmount;
-        this.userBets.push({ team, amount: parsedAmount, token, txHash: tx.hash });
-        this.updatePoolDisplay();
-        this.triggerChat('bet_placed', { team, amount: parsedAmount });
-    }
-    catch (error) {
-        console.error('[Bet] Failed to send:', error);
-        this.log(`❌ Bet failed: ${error.message}`);
-    }
+            this.bets[team] += parsedAmount;
+            this.userBets.push({ team, amount: parsedAmount, token, txHash: tx.hash });
+            this.updatePoolDisplay();
+            this.triggerChat('bet_placed', { team, amount: parsedAmount });
+        } catch (error) {
+            console.error('[Bet] Failed to send:', error);
+            this.log(`❌ Bet failed: ${error.message}`);
+        }
     }
     
-    // Chat System (more active)
     processChat() {
-        // More frequent idle chatter during betting (50% chance every 3 seconds)
         if (this.gameState === 'BETTING' && Math.random() > 0.5) {
             this.triggerChat('idle', {});
         }
-        // Commentary during battle (30% chance)
         if (this.gameState === 'BATTLING' && Math.random() > 0.7) {
             this.triggerChat('idle', {});
         }
@@ -791,15 +574,35 @@ async claimReward(betAmount) {
         this.elements.chat.appendChild(div);
         this.elements.chat.scrollTop = this.elements.chat.scrollHeight;
 
-        // Limit chat history to prevent memory issues
         const entries = this.elements.chat.querySelectorAll('.chat-entry');
         if (entries.length > 50) {
             entries[0].remove();
         }
     }
+
+    log(msg) {
+        if (!this.elements.log) return;
+        const entry = document.createElement('div');
+        entry.textContent = msg;
+        entry.style.marginBottom = '4px';
+        this.elements.log.appendChild(entry);
+        this.elements.log.scrollTop = this.elements.log.scrollHeight;
+    }
+
+    updateStatus(msg) {
+        if (this.elements.status) {
+            this.elements.status.textContent = msg;
+        }
+    }
+
+    updatePoolDisplay() {
+        if (this.elements.pool) {
+            const total = this.bets.A + this.bets.B;
+            this.elements.pool.textContent = `${total.toFixed(2)} PKMON`;
+        }
+    }
 }
 
-// Global accessor
 window.addEventListener('DOMContentLoaded', () => {
     window.battleEngine = new BattleEngine();
 });
