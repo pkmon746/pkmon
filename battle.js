@@ -320,54 +320,181 @@ class BattleEngine {
     }
 
     endBattle(winningTeam) {
-        clearInterval(this.combatInterval);
-        this.gameState = 'ENDED';
-        this.updateStatus(`🏆 TEAM ${winningTeam} WINS!`);
-        this.log(`🏆 TEAM ${winningTeam} VICTORIOUS! 🏆`);
+    clearInterval(this.combatInterval);
+    this.gameState = 'ENDED';
+    this.updateStatus(`🏆 TEAM ${winningTeam} WINS!`);
+    this.log(`🏆 TEAM ${winningTeam} VICTORIOUS! 🏆`);
 
-        this.triggerChat('win', { team: winningTeam });
+    this.triggerChat('win', { team: winningTeam });
+    setTimeout(() => this.triggerChat('win', { team: winningTeam }), 1000);
+    setTimeout(() => this.triggerChat('win', { team: winningTeam }), 2000);
 
-        // Multiple trainers react to the win
-        setTimeout(() => this.triggerChat('win', { team: winningTeam }), 1000);
-        setTimeout(() => this.triggerChat('win', { team: winningTeam }), 2000);
+    if (this.userBets.length > 0) {
+        const userBet = this.userBets[this.userBets.length - 1];
+        const didWin = userBet.team === winningTeam;
+        const betAmount = parseFloat(userBet.amount);
+        const totalPool = 10000 + betAmount;
 
-        // Payout Logic
-        if (this.userBets.length > 0) {
-            const winners = this.userBets.filter(b => b.team === winningTeam);
-            if (winners.length > 0) {
-                setTimeout(() => alert(`🎉 You won! Payout sent to wallet.`), 1000);
-            } else {
-                setTimeout(() => alert(`😢 Team ${winningTeam} won. Better luck next time.`), 1000);
-            }
+        if (didWin) {
+            setTimeout(() => this.showWinModal(betAmount), 1000);
+        } else {
+            setTimeout(() => this.showLoseModal(betAmount, totalPool), 1000);
+        }
+    }
+
+    setTimeout(() => {
+        this.syncToUTC();
+        this.startNewCycle();
+    }, 15000);
+}
+
+showWinModal(betAmount) {
+    const payout = (betAmount * 2).toFixed(2);
+    const modal = document.createElement('div');
+    modal.id = 'betResultModal';
+    modal.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(16,185,129,0.3);">
+                <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">🎉</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">축하합니다!</div>
+                <div style="font-size:1rem;color:#94a3b8;margin-bottom:0.5rem;">베팅에 성공하셨습니다!</div>
+                <div style="font-size:1.1rem;color:#10B981;font-weight:700;margin-bottom:1.75rem;">+${payout} PKMON</div>
+                <button id="claimRewardBtn" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
+                    🏆 Claim Reward
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('claimRewardBtn').addEventListener('click', async () => {
+        modal.remove();
+        await this.claimReward(betAmount);
+    });
+}
+
+showLoseModal(betAmount, totalPool) {
+    const modal = document.createElement('div');
+    modal.id = 'betResultModal';
+    modal.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
+                <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">아쉽네요,</div>
+                <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">다시 도전해보실래요?</div>
+                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
+                    <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Bet Pool</div>
+                    <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} PKMON</div>
+                </div>
+                <button onclick="document.getElementById('betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+async claimReward(betAmount) {
+    const payout = betAmount * 2;
+    const PAYOUT_SENDER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
+    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+    const ERC20_ABI = [
+        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
+        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
+    ];
+
+    try {
+        if (window.walletConnector) await window.walletConnector.switchToMonad();
+
+        const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const userAddress = await signer.getAddress();
+        const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+        const decimals = await contract.decimals();
+        const payoutWei = window.ethers.utils.parseUnits(payout.toString(), decimals);
+
+        // 리워드 지갑에서 유저에게 전송 (리워드 지갑이 서명해야 하므로 백엔드 API 호출 필요)
+        // 현재는 프론트에서 처리 불가 → 백엔드 API로 요청
+        const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                to: userAddress,
+                amount: payout,
+                timestamp: Date.now()
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
+
+            const successModal = document.createElement('div');
+            successModal.innerHTML = `
+                <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+                    <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
+                        <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
+                        <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:1.5rem;">${payout} PKMON → Your Wallet</div>
+                        <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(successModal);
+        } else {
+            throw new Error('Payout API failed');
+        }
+    } catch (error) {
+        console.error('[Claim] 실패:', error);
+        this.log(`❌ Claim failed: ${error.message}`);
+        alert('Claim failed. Please contact support.');
+    }
+}
+
+// Betting
+    async placeBet(team, amount, token) {
+        const MAX_BET = 10;
+        if (this.gameState !== 'BETTING') {
+            alert("Betting is closed! Battle is in progress.");
+        return;
         }
 
-        // Restart Cycle after delay
-        setTimeout(() => {
-            this.syncToUTC(); // Resync to next UTC slot
-            this.startNewCycle();
-        }, 10000);
-    }
-
-    // Betting
-    placeBet(team, amount, token) {
-    const MAX_BET = 10;
-
-    if (this.gameState !== 'BETTING') {
-        alert("Betting is closed! Battle is in progress.");
-        return;
-    }
-
     const parsedAmount = parseFloat(amount);
-    if (parsedAmount > MAX_BET) {
-        return;
+    if (parsedAmount > MAX_BET) return;
+
+    // 온체인 PKMON 전송
+    const BET_RECEIVER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
+    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+    const ERC20_ABI = [
+        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
+        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
+    ];
+
+    try {
+        if (window.walletConnector) await window.walletConnector.switchToMonad();
+
+        const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+        const signer = provider.getSigner();
+        const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+        const decimals = await contract.decimals();
+        const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), decimals);
+
+        const tx = await contract.transfer(BET_RECEIVER, amountWei);
+        this.log(`⏳ Sending ${parsedAmount} PKMON... TX: ${tx.hash.slice(0,10)}...`);
+
+        await tx.wait();
+        this.log(`✅ Bet confirmed! ${parsedAmount} PKMON on Team ${team}`);
+
+        this.bets[team] += parsedAmount;
+        this.userBets.push({ team, amount: parsedAmount, token, txHash: tx.hash });
+        this.updatePoolDisplay();
+        this.triggerChat('bet_placed', { team, amount: parsedAmount });
     }
-
-    this.bets[team] += parsedAmount;
-    this.userBets.push({ team, amount: parsedAmount, token });
-
-    this.updatePoolDisplay();
-    this.log(`💰 New Bet: ${parsedAmount} ${token} on Team ${team}`);
-    this.triggerChat('bet_placed', { team: team, amount: parsedAmount });
+    catch (error) {
+        console.error('[Bet] 전송 실패:', error);
+        this.log(`❌ Bet failed: ${error.message}`);
+    }
     }
     
     // Chat System (more active)
