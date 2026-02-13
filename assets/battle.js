@@ -557,14 +557,14 @@ showLoseModal(betAmount, totalPool) {
             <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
                 <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
                     <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
-                    <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">아쉽네요!</div>
-                    <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">다음에 다시 도전해보세요</div>
+                    <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">Better luck next time!</div>
+                    <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">Try again!</div>
                     <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
                         <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Total Pool</div>
                         <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} PKMON</div>
                     </div>
                     <button id="loseModalCloseBtn" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
-                        닫기
+                        Close
                     </button>
                 </div>
             </div>
@@ -642,6 +642,7 @@ showLoseModal(betAmount, totalPool) {
             alert('Claim failed. Please contact support.');
         }
     }
+}
 
 // Global accessor
 window.addEventListener('DOMContentLoaded', () => {
