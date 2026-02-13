@@ -185,13 +185,11 @@ function showWalletAlert(message) {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[PKMON Payment Gate] 초기화 중...');
     
-    // 보호 대상 페이지 목록
+    // 보호 대상 페이지 목록 (Dashboard만 결제 필요, utility/pokememe은 자유 접근)
     const protectedPages = [
         'agent-dashboard.html',
         'pokedex.html',
-        'tcg-search.html',
-        'pokememe.html',
-        'utility.html'
+        'tcg-search.html'
     ];
     
     let totalProtected = 0;
@@ -216,7 +214,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     console.log(`[PKMON Payment Gate] ${totalProtected}개의 보호 대상 링크 설정 완료`);
-    console.log('[PKMON Payment Gate] 보호 대상:', protectedPages.join(', '));
+    console.log('[PKMON Payment Gate] 보호 대상: agent-dashboard.html (utility/pokememe은 자유 접근)');
     
     // 디버깅 정보 출력
     debugPaymentStatus();
