@@ -275,7 +275,19 @@ app.get('/api/bet-history/:address', (req, res) => {
 // 페이아웃 API
 app.post('/api/payout', async (req, res) => {
     const { to, amount } = req.body;
-    if (!to || !amount) return res.status(400).json({ error: 'Missing required fields' });
+    
+    console.log('[Payout] Request received:', { to, amount });
+    
+    if (!to || !amount) {
+        console.error('[Payout] ❌ Missing required fields');
+        return res.status(400).json({ error: 'Missing required fields: to, amount' });
+    }
+
+    // Validate wallet address
+    if (!to.startsWith('0x') || to.length !== 42) {
+        console.error('[Payout] ❌ Invalid wallet address format:', to);
+        return res.status(400).json({ error: 'Invalid wallet address format' });
+    }
 
     const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY;
     const MONAD_RPC = process.env.MONAD_RPC || 'https://rpc2.monad.xyz';
@@ -285,25 +297,75 @@ app.post('/api/payout', async (req, res) => {
         { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
     ];
 
-    if (!PAYOUT_PRIVATE_KEY) return res.status(500).json({ error: 'Payout wallet not configured' });
+    if (!PAYOUT_PRIVATE_KEY) {
+        console.error('[Payout] ❌ PAYOUT_PRIVATE_KEY environment variable not set');
+        return res.status(500).json({ 
+            error: 'Payout wallet not configured. Please set PAYOUT_PRIVATE_KEY in environment variables.' 
+        });
+    }
 
     try {
         const { ethers } = require('ethers');
+        console.log('[Payout] Connecting to RPC:', MONAD_RPC);
+        
         const provider = new ethers.providers.JsonRpcProvider(MONAD_RPC);
         const wallet = new ethers.Wallet(PAYOUT_PRIVATE_KEY, provider);
+        
+        console.log('[Payout] Wallet address:', wallet.address);
+        
         const contract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, wallet);
         const decimals = await contract.decimals();
+        
+        console.log('[Payout] Token decimals:', decimals);
+        
         const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
-        const tx = await contract.transfer(to, amountWei);
-        await tx.wait();
-        console.log(`[Payout] ✅ ${amount} PKMON → ${to} | TX: ${tx.hash}`);
-        res.json({ success: true, txHash: tx.hash });
+        
+        console.log('[Payout] Transfer starting:', {
+            to,
+            amount: amount.toString(),
+            amountWei: amountWei.toString()
+        });
+        
+        const tx = await contract.transfer(to, amountWei, {
+            gasLimit: 100000 // Explicit gas limit
+        });
+        
+        console.log('[Payout] Transaction submitted:', tx.hash);
+        console.log('[Payout] Waiting for confirmation...');
+        
+        const receipt = await tx.wait();
+        
+        console.log(`[Payout] ✅ Complete! ${amount} PKMON → ${to} | TX: ${tx.hash}`);
+        console.log('[Payout] Gas used:', receipt.gasUsed.toString());
+        
+        res.json({ 
+            success: true, 
+            txHash: tx.hash,
+            amount: amount,
+            to: to,
+            gasUsed: receipt.gasUsed.toString()
+        });
     } catch (error) {
-        console.error('[Payout] Failed:', error.message);
-        res.status(500).json({ error: error.message });
+        console.error('[Payout] ❌ Failed:', error);
+        console.error('[Payout] Error stack:', error.stack);
+        
+        // Provide detailed error messages based on error type
+        let errorMessage = error.message;
+        
+        if (error.code === 'INSUFFICIENT_FUNDS') {
+            errorMessage = 'Insufficient funds in payout wallet';
+        } else if (error.code === 'NETWORK_ERROR') {
+            errorMessage = 'Network connection failed. Please try again.';
+        } else if (error.reason) {
+            errorMessage = error.reason;
+        }
+        
+        res.status(500).json({ 
+            error: errorMessage,
+            details: error.code || 'UNKNOWN_ERROR'
+        });
     }
 });
-
 
 
 // ─────────────────────────────────────────
