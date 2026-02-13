@@ -611,7 +611,7 @@ showLoseModal(betAmount, totalPool) {
 
     async claimReward(betAmount) {
     const payout = betAmount * 2;
-    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+    const API_BASE = 'https://pkmon-payment-backend-api.onrender.com';
 
     try {
         // Check wallet connection
@@ -634,7 +634,7 @@ showLoseModal(betAmount, totalPool) {
         const loadingModal = document.createElement('div');
         loadingModal.id = 'loadingModal';
         loadingModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
                 <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
                     <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">⏳</div>
                     <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Processing...</div>
@@ -644,8 +644,29 @@ showLoseModal(betAmount, totalPool) {
         `;
         document.body.appendChild(loadingModal);
 
-        // Call backend API
-        const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
+        // First, check if backend is alive
+        console.log('[Claim] Checking backend health...');
+        try {
+            const healthResponse = await fetch(`${API_BASE}/api/health`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (!healthResponse.ok) {
+                throw new Error('Backend server is not responding');
+            }
+            
+            const healthData = await healthResponse.json();
+            console.log('[Claim] Backend health:', healthData);
+        } catch (healthError) {
+            console.error('[Claim] Backend health check failed:', healthError);
+            loadingModal.remove();
+            throw new Error('Backend server is unavailable. Please try again in a moment.');
+        }
+
+        // Call payout API
+        console.log('[Claim] Calling payout API...');
+        const response = await fetch(`${API_BASE}/api/payout`, {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json'
@@ -657,18 +678,29 @@ showLoseModal(betAmount, totalPool) {
             })
         });
 
+        console.log('[Claim] API response status:', response.status);
+
+        // Get response text
+        const responseText = await response.text();
+        console.log('[Claim] API response body:', responseText);
+
         // Remove loading modal
         loadingModal.remove();
 
-        console.log('[Claim] API response status:', response.status);
-
         if (!response.ok) {
-            const errorData = await response.json();
+            let errorData;
+            try {
+                errorData = JSON.parse(responseText);
+            } catch (e) {
+                errorData = { error: responseText || 'Unknown error' };
+            }
             console.error('[Claim] API error:', errorData);
-            throw new Error(errorData.error || 'Payout API failed');
+            
+            // Show specific error message
+            throw new Error(errorData.error || `Server error (${response.status})`);
         }
 
-        const data = await response.json();
+        const data = JSON.parse(responseText);
         console.log('[Claim] Success:', data);
 
         this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
@@ -676,13 +708,13 @@ showLoseModal(betAmount, totalPool) {
         // Success modal
         const successModal = document.createElement('div');
         successModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
                 <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
                     <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
                     <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
                     <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">${payout} PKMON</div>
                     <div style="color:#64748b;font-size:0.85rem;margin-bottom:1.5rem;">TX: ${data.txHash?.slice(0,10)}...${data.txHash?.slice(-8)}</div>
-                    <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
+                    <button onclick="this.closest('div[style*=z-index]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
                 </div>
             </div>
         `;
@@ -690,17 +722,23 @@ showLoseModal(betAmount, totalPool) {
 
     } catch (error) {
         console.error('[Claim] Failed:', error);
+        console.error('[Claim] Error stack:', error.stack);
         this.log(`❌ Claim failed: ${error.message}`);
         
-        // Error modal
+        // Remove loading modal if still present
+        const existingLoading = document.getElementById('loadingModal');
+        if (existingLoading) existingLoading.remove();
+        
+        // Error modal with detailed message
         const errorModal = document.createElement('div');
         errorModal.innerHTML = `
-            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:10000;display:flex;justify-content:center;align-items:center;">
+                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
                     <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">❌</div>
                     <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Claim Failed</div>
-                    <div style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;">${error.message}</div>
-                    <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
+                    <div style="color:#94a3b8;font-size:0.85rem;margin-bottom:1rem;word-break:break-word;">${error.message}</div>
+                    <div style="color:#64748b;font-size:0.75rem;margin-bottom:1.5rem;">Check console (F12) for details</div>
+                    <button onclick="this.closest('div[style*=z-index]').parentElement.remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
                 </div>
             </div>
         `;
