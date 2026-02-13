@@ -168,16 +168,26 @@ class BattleEngine {
     }
 
     renderTeams() {
-        // Render Team A
-        if (this.teamA.length > 0) {
-            this.updateUnitDOM('teamA', this.teamA[0]);
-        }
+    console.log('[Render] Starting team render...');
+    console.log('[Render] Team A:', this.teamA);
+    console.log('[Render] Team B:', this.teamB);
 
-        // Render Team B
-        if (this.teamB.length > 0) {
-            this.updateUnitDOM('teamB', this.teamB[0]);
-        }
+    // Render Team A
+    if (this.teamA && this.teamA.length > 0 && this.teamA[0]) {
+        console.log('[Render] Rendering Team A:', this.teamA[0].name);
+        this.updateUnitDOM('teamA', this.teamA[0]);
+    } else {
+        console.error('[Render] Team A data missing!');
     }
+
+    // Render Team B
+    if (this.teamB && this.teamB.length > 0 && this.teamB[0]) {
+        console.log('[Render] Rendering Team B:', this.teamB[0].name);
+        this.updateUnitDOM('teamB', this.teamB[0]);
+    } else {
+        console.error('[Render] Team B data missing!');
+    }
+}
 
     updateUnitDOM(teamId, pokemon) {
     const el = document.getElementById(teamId);
