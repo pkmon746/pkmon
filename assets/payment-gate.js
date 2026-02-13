@@ -55,14 +55,13 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
         
         console.log(`[PKMON Payment Gate] 결제 상태: ${isPaid ? '✅ 결제 완료' : '❌ 미결제'}`);
 
-        hideLoadingSpinner();
-        
         if (isPaid) {
             // 결제 완료 지갑 → 즉시 이동
+            hideLoadingSpinner();
             console.log(`[PKMON Payment Gate] ✅ 접근 허용 → ${targetUrl}`);
             window.location.href = targetUrl;
         } else {
-            // 미결제 지갑 → 결제 게이트
+            // 미결제 지갑 → 결제 게이트 (스피너는 runPaymentGate에서 제거)
             console.log('[PKMON Payment Gate] ❌ 미결제 → 결제 게이트 표시');
             await runPaymentGate(account, targetUrl);
         }
@@ -74,9 +73,8 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
             console.warn('[PKMON Payment Gate] 백엔드 타임아웃 → 로컬 확인 시도');
             const localPaid = window.pkmonPayment.checkPaymentHistoryLocal(account);
             
-            hideLoadingSpinner();
-            
             if (localPaid) {
+                hideLoadingSpinner();
                 console.log('[PKMON Payment Gate] ✅ 로컬 결제 이력 확인 → 접근 허용');
                 window.location.href = targetUrl;
             } else {
@@ -104,20 +102,27 @@ async function runPaymentGate(account, targetUrl) {
         const balanceNum = parseFloat(balance);
 
         if (balanceNum < payment.paymentAmount) {
-            // 잔액 부족 → 구매 안내 모달 (이동 없음)
+            // ✅ 잔액 부족 모달이 완전히 표시된 후 로딩 스피너 제거
             payment.showInsufficientBalanceModal(balanceNum.toFixed(2));
+            // 모달 DOM이 완전히 렌더링된 후 스피너 제거
+            setTimeout(() => {
+                hideLoadingSpinner();
+            }, 100);
             return;
         }
 
-        // 결제 확인 모달 → 결제 처리 → 완료 후 이동
-        // showPaymentModal은 confirmPaymentBtn 클릭 시 processPayment 호출
-        // processPayment 성공 후 targetUrl로 이동하도록 수정
+        // ✅ 결제 모달이 완전히 표시된 후 로딩 스피너 제거
         payment.pendingTargetUrl = targetUrl;
         payment.showPaymentModal(balanceNum.toFixed(2), account);
+        // 모달 DOM이 완전히 렌더링된 후 스피너 제거
+        setTimeout(() => {
+            hideLoadingSpinner();
+        }, 100);
 
     } catch (error) {
         console.error('[Payment Gate] 오류:', error);
-        alert('결제 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
+        hideLoadingSpinner();
+        alert('An error occurred during payment processing. Please try again.');
     }
 }
 
