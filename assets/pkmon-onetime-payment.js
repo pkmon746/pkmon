@@ -295,38 +295,47 @@ class PKMONOneTimePayment {
                         <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-coins" style="font-size: 48px; color: white;"></i>
                         </div>
-                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 28px;">콘텐츠 접근을 위한 결제</h2>
-                        <p style="color: #94a3b8; margin: 0;">한 번 결제로 영구 접근 가능합니다</p>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 28px;">Payment for Content Access</h2>
+                        <p style="color: #94a3b8; margin: 0;">One-time payment for permanent access</p>
                     </div>
                     
                     <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 25px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                            <span style="color: #cbd5e1;">결제 금액:</span>
+                            <span style="color: #cbd5e1;">Payment Amount:</span>
                             <span style="color: white; font-weight: bold; font-size: 20px;">${this.paymentAmount} PKMON</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
-                            <span style="color: #cbd5e1;">보유 잔액:</span>
+                            <span style="color: #cbd5e1;">Your Balance:</span>
                             <span style="color: #10B981; font-weight: bold;">${balance} PKMON</span>
                         </div>
                         <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
                         <div style="display: flex; justify-content: space-between;">
-                            <span style="color: #cbd5e1;">받는 주소:</span>
+                            <span style="color: #cbd5e1;">Recipient:</span>
                             <span style="color: #60a5fa; font-size: 12px; font-family: monospace;">${this.receiverAddress.slice(0,6)}...${this.receiverAddress.slice(-4)}</span>
                         </div>
                     </div>
                     
-                    <button id="confirmPaymentBtn" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
-                        <i class="fas fa-check-circle"></i> 결제하기
-                    </button>
+                    <div style="display: flex; gap: 12px;">
+                        <button id="exitPaymentBtn" style="flex: 1; padding: 16px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s;">
+                            <i class="fas fa-times"></i> EXIT
+                        </button>
+                        <button id="confirmPaymentBtn" style="flex: 2; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                            <i class="fas fa-check-circle"></i> Confirm Payment
+                        </button>
+                    </div>
                     
                     <p style="text-align: center; color: #64748b; font-size: 12px; margin-top: 20px;">
-                        <i class="fas fa-shield-alt"></i> 안전한 블록체인 결제
+                        <i class="fas fa-shield-alt"></i> Secure Blockchain Payment
                     </p>
                 </div>
             </div>
         `;
 
         document.body.appendChild(modal);
+
+        document.getElementById('exitPaymentBtn').addEventListener('click', () => {
+            modal.remove();
+        });
 
         document.getElementById('confirmPaymentBtn').addEventListener('click', () => {
             modal.remove();
@@ -346,26 +355,26 @@ class PKMONOneTimePayment {
                         <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: white;"></i>
                         </div>
-                        <h2 style="color: white; margin: 0 0 15px 0;">PKMON 잔액 부족</h2>
+                        <h2 style="color: white; margin: 0 0 15px 0;">Insufficient PKMON Balance</h2>
                         <p style="color: #94a3b8; margin-bottom: 25px;">
-                            현재 잔액: <strong style="color: #f59e0b;">${balance} PKMON</strong><br>
-                            필요 금액: <strong style="color: white;">${this.paymentAmount} PKMON</strong>
+                            Current Balance: <strong style="color: #f59e0b;">${balance} PKMON</strong><br>
+                            Required Amount: <strong style="color: white;">${this.paymentAmount} PKMON</strong>
                         </p>
                         
                         <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
                             <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 14px;">
                                 <i class="fas fa-shopping-cart" style="color: #10B981; margin-right: 8px;"></i>
-                                PKMON 토큰 구매 방법:
+                                How to buy PKMON tokens:
                             </p>
                             <ol style="color: #94a3b8; margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
-                                <li>DEX(탈중앙화 거래소)에서 구매</li>
-                                <li>공식 밈코인 사이트에서 구매</li>
-                                <li>Faucet에서 테스트넷 토큰 받기</li>
+                                <li>Purchase on DEX (Decentralized Exchange)</li>
+                                <li>Buy on official memecoin website</li>
+                                <li>Get testnet tokens from Faucet</li>
                             </ol>
                         </div>
                         
                         <button onclick="this.parentElement.parentElement.parentElement.remove()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                            확인
+                            <i class="fas fa-times"></i> Close
                         </button>
                     </div>
                 </div>
@@ -382,8 +391,8 @@ class PKMONOneTimePayment {
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center;">
                     <div class="spinner" style="width: 60px; height: 60px; margin: 0 auto 20px; border: 4px solid rgba(255,255,255,0.1); border-top-color: #10B981; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                    <h2 style="color: white; margin: 0 0 10px 0;">결제 처리 중...</h2>
-                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">블록체인에서 트랜잭션을 확인하고 있습니다</p>
+                    <h2 style="color: white; margin: 0 0 10px 0;">Processing Payment...</h2>
+                    <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px;">Verifying transaction on blockchain</p>
                     <p style="color: #60a5fa; font-size: 12px; font-family: monospace; word-break: break-all;">
                         ${txHash}
                     </p>
@@ -423,13 +432,13 @@ class PKMONOneTimePayment {
                     <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-check" style="font-size: 48px; color: white;"></i>
                     </div>
-                    <h2 style="color: white; margin: 0 0 15px 0;">🎉 결제 완료!</h2>
-                    <p style="color: #94a3b8; margin-bottom: 20px;">이제 모든 콘텐츠를 자유롭게 이용하실 수 있습니다</p>
+                    <h2 style="color: white; margin: 0 0 15px 0;">🎉 Payment Complete!</h2>
+                    <p style="color: #94a3b8; margin-bottom: 20px;">You now have full access to all content</p>
                     <p style="color: #60a5fa; font-size: 11px; font-family: monospace; word-break: break-all; margin-bottom: 25px;">
                         TX: ${txHash}
                     </p>
                     <button onclick="window.__pkmonSuccessRedirect && window.__pkmonSuccessRedirect()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                        시작하기
+                        Get Started
                     </button>
                 </div>
             </div>
@@ -448,12 +457,12 @@ class PKMONOneTimePayment {
                     <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-times" style="font-size: 48px; color: white;"></i>
                     </div>
-                    <h2 style="color: white; margin: 0 0 15px 0;">결제 실패</h2>
+                    <h2 style="color: white; margin: 0 0 15px 0;">Payment Failed</h2>
                     <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px; word-break: break-word;">
                         ${errorMessage}
                     </p>
                     <button onclick="this.parentElement.parentElement.parentElement.remove()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                        확인
+                        Close
                     </button>
                 </div>
             </div>
@@ -470,7 +479,7 @@ class PKMONOneTimePayment {
         toast.innerHTML = `
             <div style="position: fixed; top: 20px; right: 20px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; padding: 16px 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9999; animation: slideIn 0.3s ease-out;">
                 <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
-                결제 완료된 지갑입니다
+                Payment already completed
             </div>
             <style>
                 @keyframes slideIn {
@@ -496,12 +505,12 @@ class PKMONOneTimePayment {
                     <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                         <i class="fas fa-wallet" style="font-size: 48px; color: white;"></i>
                     </div>
-                    <h2 style="color: white; margin: 0 0 15px 0;">지갑이 필요합니다</h2>
+                    <h2 style="color: white; margin: 0 0 15px 0;">Wallet Required</h2>
                     <p style="color: #94a3b8; margin-bottom: 25px;">
-                        이 콘텐츠를 이용하려면 MetaMask 또는 Rabby 지갑이 필요합니다
+                        You need MetaMask or Rabby wallet to access this content
                     </p>
                     <a href="https://metamask.io" target="_blank" style="display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; border-radius: 10px; font-weight: bold; margin-bottom: 10px;">
-                        <i class="fab fa-firefox-browser"></i> MetaMask 설치
+                        <i class="fab fa-firefox-browser"></i> Install MetaMask
                     </a>
                 </div>
             </div>
