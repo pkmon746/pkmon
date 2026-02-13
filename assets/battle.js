@@ -491,7 +491,7 @@ class BattleEngine {
                 <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">Congratulations!</div>
                 <div style="font-size:1rem;color:#94a3b8;margin-bottom:0.5rem;">You won the bet!</div>
                 <div style="font-size:1.1rem;color:#10B981;font-weight:700;margin-bottom:1.75rem;">+${payout.toFixed(2)} PKMON</div>
-                <button onclick="this.closest('#betResultModal').remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">🏆 확인</button>
+                <button onclick="this.closest('#betResultModal').remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">🏆 Confirm</button>
             </div>
         </div>
     `;
@@ -511,7 +511,7 @@ showLoseModal(betAmount, totalPool) {
                     <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Total Pool</div>
                     <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} PKMON</div>
                 </div>
-                <button onclick="this.closest('#betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">닫기</button>
+                <button onclick="this.closest('#betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
             </div>
         </div>
     `;
