@@ -207,11 +207,17 @@ class WalletConnector {
     updateUI() {
         const connectBtn = document.getElementById('connectWalletBtn');
         if (this.currentAccount && connectBtn) {
+            // ✅ 전역 플래그 설정 (배틀 페이지에서 사용)
+            window.walletConnected = true;
+            
             const shortAddress = `${this.currentAccount.slice(0, 6)}...${this.currentAccount.slice(-4)}`;
             connectBtn.innerHTML = `<i class="fas fa-check-circle"></i> ${shortAddress} <i class="fas fa-sign-out-alt" style="margin-left: 8px; opacity: 0.7; font-size: 12px;"></i>`;
             connectBtn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
             connectBtn.title = 'Click to disconnect wallet';
         } else if (connectBtn) {
+            // ✅ 지갑 연결 해제 시 플래그 제거
+            window.walletConnected = false;
+            
             connectBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
             connectBtn.style.background = '';
             connectBtn.title = 'Click to connect wallet';
