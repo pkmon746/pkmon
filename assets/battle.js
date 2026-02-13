@@ -180,33 +180,45 @@ class BattleEngine {
     }
 
     updateUnitDOM(teamId, pokemon) {
-        const el = document.getElementById(teamId);
-        if (!el || !pokemon) {
-            console.warn(`Cannot update ${teamId}:`, pokemon);
-            return;
-        }
-
-        // Update name
-        const nameEl = el.querySelector('.name');
-        if (nameEl) {
-            nameEl.textContent = pokemon.name;
-            nameEl.style.opacity = '1';
-        }
-
-        // Update sprite
-        const sprite = el.querySelector('.pokemon-sprite');
-        if (sprite) {
-            sprite.src = pokemon.sprite;
-            sprite.style.opacity = '1';
-        }
-
-        // Reset Health Bar
-        const hpBar = el.querySelector('.hp-bar');
-        if (hpBar) {
-            hpBar.style.width = '100%';
-            hpBar.className = 'hp-bar';
-        }
+    const el = document.getElementById(teamId);
+    if (!el || !pokemon) {
+        console.warn(`Cannot update ${teamId}:`, pokemon);
+        return;
     }
+
+    console.log(`[Render] Updating ${teamId} with:`, pokemon.name); // 디버깅용
+
+    // Update name
+    const nameEl = el.querySelector('.name');
+    if (nameEl) {
+        nameEl.textContent = pokemon.name || 'UNKNOWN';
+        nameEl.style.opacity = '1';
+        nameEl.style.display = 'block'; // 추가
+    } else {
+        console.error(`[Render] Name element not found for ${teamId}`);
+    }
+
+    // Update sprite
+    const sprite = el.querySelector('.pokemon-sprite');
+    if (sprite) {
+        sprite.src = pokemon.sprite || '';
+        sprite.style.opacity = '1';
+        sprite.style.display = 'block'; // 추가
+        sprite.onerror = () => {
+            console.error(`[Render] Failed to load sprite for ${pokemon.name}`);
+            sprite.style.display = 'none';
+        };
+    } else {
+        console.error(`[Render] Sprite element not found for ${teamId}`);
+    }
+
+    // Reset Health Bar
+    const hpBar = el.querySelector('.hp-bar');
+    if (hpBar) {
+        hpBar.style.width = '100%';
+        hpBar.className = 'hp-bar';
+    }
+}
 
     tick() {
         // Timer Logic
