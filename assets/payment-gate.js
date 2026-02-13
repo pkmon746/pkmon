@@ -6,6 +6,8 @@
  * @param {string} targetUrl - 이동할 대상 URL (기본값: 'agent-dashboard.html')
  */
 async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
+    console.log(`[PKMON Payment Gate] 페이지 접근 시도: ${targetUrl}`);
+    
     // ✅ FIX: 사이트에서 명시적으로 연결 승인된 지갑만 허용
     // eth_accounts / eth_requestAccounts 직접 호출 금지
     // → walletConnector.currentAccount 만을 단일 진실 출처로 사용
@@ -38,14 +40,20 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
     }
 
     try {
+        console.log(`[PKMON Payment Gate] 결제 확인 중... 지갑: ${account.slice(0, 10)}...`);
+        
         // 결제 이력 확인 (백엔드 → 로컬 순서)
         const isPaid = await window.pkmonPayment.checkPaymentHistory(account);
+        
+        console.log(`[PKMON Payment Gate] 결제 상태: ${isPaid ? '✅ 결제 완료' : '❌ 미결제'}`);
 
         if (isPaid) {
             // 결제 완료 지갑 → 즉시 이동
+            console.log(`[PKMON Payment Gate] ✅ 접근 허용 → ${targetUrl}`);
             window.location.href = targetUrl;
         } else {
             // 미결제 지갑 → 결제 게이트
+            console.log('[PKMON Payment Gate] ❌ 미결제 → 결제 게이트 표시');
             await runPaymentGate(account, targetUrl);
         }
     } catch (error) {
@@ -140,21 +148,102 @@ function showWalletAlert(message) {
     setTimeout(() => toast.remove(), 3500);
 }
 
-// ✅ 페이지 로드 시 모든 dashboard 링크를 보호된 링크로 변환
+// ✅ 페이지 로드 시 모든 보호 대상 페이지 링크를 보호된 링크로 변환
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[PKMON Payment Gate] 초기화 중...');
     
-    // agent-dashboard.html로 직접 연결된 모든 링크 찾기
-    const dashboardLinks = document.querySelectorAll('a[href="agent-dashboard.html"]');
+    // 보호 대상 페이지 목록
+    const protectedPages = [
+        'agent-dashboard.html',
+        'pokedex.html',
+        'tcg-search.html',
+        'pokememe.html',
+        'utility.html'
+    ];
     
-    dashboardLinks.forEach(link => {
-        // href를 javascript:void(0)으로 변경하고 onclick 이벤트 추가
-        link.setAttribute('href', 'javascript:void(0);');
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            handleProtectedLink('agent-dashboard.html');
+    let totalProtected = 0;
+    
+    protectedPages.forEach(page => {
+        // 각 페이지로 직접 연결된 모든 링크 찾기
+        const links = document.querySelectorAll(`a[href="${page}"]`);
+        
+        links.forEach(link => {
+            // href를 javascript:void(0)으로 변경하고 onclick 이벤트 추가
+            link.setAttribute('href', 'javascript:void(0);');
+            link.setAttribute('data-protected-page', page);
+            
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetPage = this.getAttribute('data-protected-page');
+                handleProtectedLink(targetPage);
+            });
+            
+            totalProtected++;
         });
     });
 
-    console.log(`[PKMON Payment Gate] ${dashboardLinks.length}개의 dashboard 링크 보호 완료`);
+    console.log(`[PKMON Payment Gate] ${totalProtected}개의 보호 대상 링크 설정 완료`);
+    console.log('[PKMON Payment Gate] 보호 대상:', protectedPages.join(', '));
+    
+    // 디버깅 정보 출력
+    debugPaymentStatus();
 });
+
+/**
+ * 결제 상태 디버깅 함수 (개발자 도구에서 확인용)
+ */
+function debugPaymentStatus() {
+    setTimeout(() => {
+        const account = window.walletConnector?.currentAccount;
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('🔍 [PKMON Payment Gate] 현재 상태:');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('1. 지갑 연결:', account ? `✅ ${account.slice(0, 10)}...` : '❌ 미연결');
+        console.log('2. 로그아웃 플래그:', sessionStorage.getItem('pkmon_user_logged_out') || 'null');
+        console.log('3. 연결 승인 플래그:', localStorage.getItem('pkmon_wallet_connected') || 'null');
+        
+        if (account) {
+            try {
+                const paidUsers = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                const isPaidLocal = paidUsers.includes(account.toLowerCase());
+                console.log('4. 로컬 결제 이력:', isPaidLocal ? '✅ 있음' : '❌ 없음');
+                console.log('5. 저장된 결제 지갑:', paidUsers.length > 0 ? paidUsers : '없음');
+            } catch (e) {
+                console.log('4. 로컬 결제 이력:', '❌ 오류');
+            }
+        }
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        console.log('💡 브라우저 콘솔에서 다음 명령어로 수동 확인 가능:');
+        console.log('   - window.debugPaymentStatus() : 현재 상태 확인');
+        console.log('   - window.checkMyPayment() : 내 지갑 결제 여부 확인');
+        console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    }, 1000);
+}
+
+/**
+ * 현재 연결된 지갑의 결제 상태 확인 (개발자 도구용)
+ */
+window.debugPaymentStatus = debugPaymentStatus;
+
+window.checkMyPayment = async function() {
+    const account = window.walletConnector?.currentAccount;
+    if (!account) {
+        console.log('❌ 지갑이 연결되지 않았습니다.');
+        return;
+    }
+    
+    console.log(`🔍 지갑 확인 중: ${account}`);
+    
+    if (!window.pkmonPayment) {
+        console.log('❌ pkmonPayment 시스템이 로드되지 않았습니다.');
+        return;
+    }
+    
+    try {
+        const isPaid = await window.pkmonPayment.checkPaymentHistory(account);
+        console.log(`결과: ${isPaid ? '✅ 결제 완료' : '❌ 미결제'}`);
+        return isPaid;
+    } catch (error) {
+        console.error('확인 중 오류:', error);
+    }
+};
