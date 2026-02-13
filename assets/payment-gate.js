@@ -8,9 +8,13 @@
 async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
     console.log(`[PKMON Payment Gate] 페이지 접근 시도: ${targetUrl}`);
     
+    // ✅ Show loading spinner
+    showLoadingSpinner();
+    
     // 1. 로그아웃 상태 체크
     if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
-        showWalletAlert('먼저 지갑을 연결해주세요!\n우측 상단 "Connect Wallet" 버튼을 클릭하세요.');
+        hideLoadingSpinner();
+        showWalletAlert('Please connect your wallet first!\nClick "Connect Wallet" button in the top right corner.');
         pulseWalletBtn();
         return;
     }
@@ -18,7 +22,8 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
     // 2. walletConnector가 실제로 계정을 들고 있는지 확인
     const account = window.walletConnector && window.walletConnector.currentAccount;
     if (!account) {
-        showWalletAlert('먼저 지갑을 연결해주세요!\n우측 상단 "Connect Wallet" 버튼을 클릭하세요.');
+        hideLoadingSpinner();
+        showWalletAlert('Please connect your wallet first!\nClick "Connect Wallet" button in the top right corner.');
         pulseWalletBtn();
         return;
     }
@@ -30,7 +35,8 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
     }
 
     if (!window.pkmonPayment) {
-        alert('시스템 로딩 중입니다. 새로고침(F5) 후 다시 시도해주세요.');
+        hideLoadingSpinner();
+        alert('System is loading. Please refresh (F5) and try again.');
         return;
     }
 
@@ -39,7 +45,7 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
         
         // ✅ 타임아웃 추가: 5초 안에 응답 없으면 에러
         const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('결제 확인 시간 초과')), 5000)
+            setTimeout(() => reject(new Error('Payment verification timeout')), 5000)
         );
         
         const isPaid = await Promise.race([
@@ -49,6 +55,8 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
         
         console.log(`[PKMON Payment Gate] 결제 상태: ${isPaid ? '✅ 결제 완료' : '❌ 미결제'}`);
 
+        hideLoadingSpinner();
+        
         if (isPaid) {
             // 결제 완료 지갑 → 즉시 이동
             console.log(`[PKMON Payment Gate] ✅ 접근 허용 → ${targetUrl}`);
@@ -62,9 +70,11 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
         console.error('[PKMON Payment Gate] 오류:', error);
         
         // 타임아웃 또는 네트워크 오류 시 로컬 확인으로 폴백
-        if (error.message === '결제 확인 시간 초과' || error.message.includes('fetch')) {
+        if (error.message === 'Payment verification timeout' || error.message.includes('fetch')) {
             console.warn('[PKMON Payment Gate] 백엔드 타임아웃 → 로컬 확인 시도');
             const localPaid = window.pkmonPayment.checkPaymentHistoryLocal(account);
+            
+            hideLoadingSpinner();
             
             if (localPaid) {
                 console.log('[PKMON Payment Gate] ✅ 로컬 결제 이력 확인 → 접근 허용');
@@ -74,7 +84,8 @@ async function handleProtectedLink(targetUrl = 'agent-dashboard.html') {
                 await runPaymentGate(account, targetUrl);
             }
         } else {
-            alert('결제 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+            hideLoadingSpinner();
+            alert('An error occurred during payment verification. Please try again.');
         }
     }
 }
@@ -264,3 +275,43 @@ window.checkMyPayment = async function() {
         console.error('확인 중 오류:', error);
     }
 };
+
+/**
+ * Show loading spinner
+ */
+function showLoadingSpinner() {
+    // Remove existing spinner if any
+    const existing = document.getElementById('payment-loading-spinner');
+    if (existing) existing.remove();
+    
+    const spinner = document.createElement('div');
+    spinner.id = 'payment-loading-spinner';
+    spinner.innerHTML = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99998; display: flex; justify-content: center; align-items: center;">
+            <div style="text-align: center;">
+                <div class="loading-spinner" style="width: 60px; height: 60px; border: 4px solid rgba(124, 58, 237, 0.2); border-top: 4px solid #7c3aed; border-radius: 50%; margin: 0 auto 20px; animation: spin 1s linear infinite;"></div>
+                <p style="color: white; font-size: 16px; font-weight: 600; margin: 0;">Loading...</p>
+                <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">Please wait</p>
+            </div>
+        </div>
+        <style>
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `;
+    document.body.appendChild(spinner);
+}
+
+/**
+ * Hide loading spinner
+ */
+function hideLoadingSpinner() {
+    const spinner = document.getElementById('payment-loading-spinner');
+    if (spinner) {
+        spinner.style.opacity = '0';
+        spinner.style.transition = 'opacity 0.2s';
+        setTimeout(() => spinner.remove(), 200);
+    }
+}
