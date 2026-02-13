@@ -508,28 +508,45 @@ showLoseModal(betAmount, totalPool) {
 
 async claimReward(betAmount) {
     const payout = betAmount * 2;
-    const PAYOUT_SENDER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
     const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
-    const ERC20_ABI = [
-        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
-        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
-    ];
 
     try {
-        if (window.walletConnector) await window.walletConnector.switchToMonad();
+        // Check wallet connection
+        if (!window.ethereum) {
+            throw new Error('MetaMask not installed');
+        }
+
+        if (window.walletConnector) {
+            await window.walletConnector.switchToMonad();
+        }
 
         const provider = new window.ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const userAddress = await signer.getAddress();
-        const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
-        const decimals = await contract.decimals();
-        const payoutWei = window.ethers.utils.parseUnits(payout.toString(), decimals);
 
-        // 리워드 지갑에서 유저에게 전송 (리워드 지갑이 서명해야 하므로 백엔드 API 호출 필요)
-        // 현재는 프론트에서 처리 불가 → 백엔드 API로 요청
+        console.log('[Claim] User address:', userAddress);
+        console.log('[Claim] Payout amount:', payout);
+
+        // Show loading modal
+        const loadingModal = document.createElement('div');
+        loadingModal.id = 'loadingModal';
+        loadingModal.innerHTML = `
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">⏳</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Processing...</div>
+                    <div style="color:#94a3b8;font-size:0.9rem;">Sending ${payout} PKMON to your wallet</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(loadingModal);
+
+        // Call backend API
         const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
                 to: userAddress,
                 amount: payout,
@@ -537,29 +554,54 @@ async claimReward(betAmount) {
             })
         });
 
-        if (response.ok) {
-            const data = await response.json();
-            this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
+        // Remove loading modal
+        loadingModal.remove();
 
-            const successModal = document.createElement('div');
-            successModal.innerHTML = `
-                <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                    <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
-                        <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
-                        <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:1.5rem;">${payout} PKMON → Your Wallet</div>
-                        <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(successModal);
-        } else {
-            throw new Error('Payout API failed');
+        console.log('[Claim] API response status:', response.status);
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[Claim] API error:', errorData);
+            throw new Error(errorData.error || 'Payout API failed');
         }
+
+        const data = await response.json();
+        console.log('[Claim] Success:', data);
+
+        this.log(`🎉 Reward claimed! ${payout} PKMON sent. TX: ${data.txHash?.slice(0,10)}...`);
+
+        // Success modal
+        const successModal = document.createElement('div');
+        successModal.innerHTML = `
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
+                    <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:0.5rem;">${payout} PKMON</div>
+                    <div style="color:#64748b;font-size:0.85rem;margin-bottom:1.5rem;">TX: ${data.txHash?.slice(0,10)}...${data.txHash?.slice(-8)}</div>
+                    <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(successModal);
+
     } catch (error) {
-        console.error('[Claim] 실패:', error);
+        console.error('[Claim] Failed:', error);
         this.log(`❌ Claim failed: ${error.message}`);
-        alert('Claim failed. Please contact support.');
+        
+        // Error modal
+        const errorModal = document.createElement('div');
+        errorModal.innerHTML = `
+            <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
+                <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
+                    <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">❌</div>
+                    <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Claim Failed</div>
+                    <div style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;">${error.message}</div>
+                    <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(errorModal);
     }
 }
 
