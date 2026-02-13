@@ -141,18 +141,18 @@ class WalletConnector {
                         <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                             <i class="fas fa-sign-out-alt" style="font-size: 36px; color: white;"></i>
                         </div>
-                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px;">지갑 연결 해제</h2>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px;">Disconnect Wallet</h2>
                         <p id="logoutWalletAddress" style="color: #94a3b8; font-size: 14px; margin: 0; font-family: monospace;"></p>
                     </div>
                     <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
                         <p style="color: #cbd5e1; margin: 0; font-size: 14px; line-height: 1.6;">
                             <i class="fas fa-info-circle" style="color: #60a5fa; margin-right: 8px;"></i>
-                            지갑 연결을 해제하면 결제 정보는 유지되지만, 콘텐츠에 다시 접근하려면 재연결이 필요합니다.
+                            Disconnecting your wallet will maintain your payment history, but you'll need to reconnect to access content again.
                         </p>
                     </div>
                     <div style="display: flex; gap: 12px;">
-                        <button id="cancelLogoutBtn" style="flex: 1; padding: 14px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600;">취소</button>
-                        <button id="confirmLogoutBtn" style="flex: 1; padding: 14px 24px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600;">연결 해제</button>
+                        <button id="cancelLogoutBtn" style="flex: 1; padding: 14px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600;">Cancel</button>
+                        <button id="confirmLogoutBtn" style="flex: 1; padding: 14px 24px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600;">Disconnect</button>
                     </div>
                 </div>
             </div>
@@ -189,7 +189,19 @@ class WalletConnector {
         this.provider = null;
         this.updateUI();
         this.hideLogoutModal();
-        setTimeout(() => window.location.reload(), 300);
+        
+        // ✅ FIX: 대시보드에서 로그아웃하면 홈페이지로 리다이렉트
+        const isDashboard = window.location.pathname.includes('agent-dashboard') || 
+                           window.location.pathname.includes('pokedex') ||
+                           window.location.pathname.includes('tcg-search') ||
+                           window.location.pathname.includes('pokememe') ||
+                           window.location.pathname.includes('utility');
+        
+        if (isDashboard) {
+            setTimeout(() => window.location.href = 'index.html', 300);
+        } else {
+            setTimeout(() => window.location.reload(), 300);
+        }
     }
 
     updateUI() {
@@ -198,11 +210,11 @@ class WalletConnector {
             const shortAddress = `${this.currentAccount.slice(0, 6)}...${this.currentAccount.slice(-4)}`;
             connectBtn.innerHTML = `<i class="fas fa-check-circle"></i> ${shortAddress} <i class="fas fa-sign-out-alt" style="margin-left: 8px; opacity: 0.7; font-size: 12px;"></i>`;
             connectBtn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
-            connectBtn.title = '클릭하여 지갑 연결 해제';
+            connectBtn.title = 'Click to disconnect wallet';
         } else if (connectBtn) {
             connectBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
             connectBtn.style.background = '';
-            connectBtn.title = '클릭하여 지갑 연결';
+            connectBtn.title = 'Click to connect wallet';
         }
     }
 
