@@ -350,34 +350,26 @@ class BattleEngine {
 
     // Betting
     placeBet(team, amount, token) {
-        if (this.gameState !== 'BETTING') {
-            alert("Betting is closed! Battle is in progress.");
-            return;
-        }
+    const MAX_BET = 10;
 
-        this.bets[team] += parseFloat(amount);
-        this.userBets.push({ team, amount, token });
-
-        this.updatePoolDisplay();
-        this.log(`💰 New Bet: ${amount} ${token} on Team ${team}`);
-        this.triggerChat('bet_placed', { team: team, amount: amount });
+    if (this.gameState !== 'BETTING') {
+        alert("Betting is closed! Battle is in progress.");
+        return;
     }
 
-    updatePoolDisplay() {
-        const total = this.bets.A + this.bets.B;
-        this.elements.pool.textContent = total.toFixed(2);
+    const parsedAmount = parseFloat(amount);
+    if (parsedAmount > MAX_BET) {
+        return;
     }
 
-    updateStatus(text) {
-        this.elements.status.textContent = text;
-    }
+    this.bets[team] += parsedAmount;
+    this.userBets.push({ team, amount: parsedAmount, token });
 
-    log(msg) {
-        const line = document.createElement('div');
-        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        this.elements.log.prepend(line);
+    this.updatePoolDisplay();
+    this.log(`💰 New Bet: ${parsedAmount} ${token} on Team ${team}`);
+    this.triggerChat('bet_placed', { team: team, amount: parsedAmount });
     }
-
+    
     // Chat System (more active)
     processChat() {
         // More frequent idle chatter during betting (50% chance every 3 seconds)
