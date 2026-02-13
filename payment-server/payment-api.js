@@ -190,6 +190,123 @@ app.get('/api/stats', (req, res) => {
 });
 
 // ─────────────────────────────────────────
+// 베팅 트래킹 API (추가)
+// ─────────────────────────────────────────
+
+// 베팅 기록 테이블 생성
+db.serialize(() => {
+    db.run(`
+        CREATE TABLE IF NOT EXISTS bets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            address TEXT NOT NULL,
+            team TEXT NOT NULL,
+            amount REAL NOT NULL,
+            txHash TEXT,
+            battle_id TEXT NOT NULL,
+            timestamp INTEGER NOT NULL
+        )
+    `);
+    db.run(`
+        CREATE TABLE IF NOT EXISTS battle_results (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            battle_id TEXT NOT NULL UNIQUE,
+            winning_team TEXT NOT NULL,
+            pokemon_a TEXT NOT NULL,
+            pokemon_b TEXT NOT NULL,
+            timestamp INTEGER NOT NULL
+        )
+    `);
+});
+
+// 베팅 기록
+app.post('/api/record-bet', (req, res) => {
+    const { address, team, amount, txHash, battle_id, timestamp } = req.body;
+    if (!address || !team || !amount || !battle_id) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+    db.run(
+        'INSERT INTO bets (address, team, amount, txHash, battle_id, timestamp) VALUES (?, ?, ?, ?, ?, ?)',
+        [address.toLowerCase(), team, amount, txHash || null, battle_id, timestamp || Date.now()],
+        function(err) {
+            if (err) return res.status(500).json({ error: 'Database error' });
+            console.log(`[Bet] Record: ${address} | Team ${team} | ${amount} PKMON`);
+            res.json({ success: true });
+        }
+    );
+});
+
+// 배틀 결과 기록
+app.post('/api/battle-result', (req, res) => {
+    const { battle_id, winning_team, pokemon_a, pokemon_b, timestamp } = req.body;
+    if (!battle_id || !winning_team || !pokemon_a || !pokemon_b) {
+        return res.status(400).json({ error: 'Missing required fields' });
+    }
+    db.run(
+        'INSERT OR IGNORE INTO battle_results (battle_id, winning_team, pokemon_a, pokemon_b, timestamp) VALUES (?, ?, ?, ?, ?)',
+        [battle_id, winning_team, pokemon_a, pokemon_b, timestamp || Date.now()],
+        function(err) {
+            if (err) return res.status(500).json({ error: 'Database error' });
+            console.log(`[Battle] Result: ${battle_id} | Winning Team: ${winning_team}`);
+            res.json({ success: true, battle_id, winning_team });
+        }
+    );
+});
+
+// 베팅 이력 조회
+app.get('/api/bet-history/:address', (req, res) => {
+    const address = req.params.address.toLowerCase();
+    db.all(`
+        SELECT b.*, br.winning_team, br.pokemon_a, br.pokemon_b,
+            CASE
+                WHEN br.winning_team IS NULL THEN 'pending'
+                WHEN b.team = br.winning_team THEN 'win'
+                ELSE 'lose'
+            END AS result
+        FROM bets b
+        LEFT JOIN battle_results br ON b.battle_id = br.battle_id
+        WHERE b.address = ?
+        ORDER BY b.timestamp DESC LIMIT 50
+    `, [address], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Database error' });
+        res.json({ address, history: rows });
+    });
+});
+
+// 페이아웃 API
+app.post('/api/payout', async (req, res) => {
+    const { to, amount } = req.body;
+    if (!to || !amount) return res.status(400).json({ error: 'Missing required fields' });
+
+    const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY;
+    const MONAD_RPC = process.env.MONAD_RPC || 'https://rpc2.monad.xyz';
+    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+    const ERC20_ABI = [
+        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
+        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
+    ];
+
+    if (!PAYOUT_PRIVATE_KEY) return res.status(500).json({ error: 'Payout wallet not configured' });
+
+    try {
+        const { ethers } = require('ethers');
+        const provider = new ethers.providers.JsonRpcProvider(MONAD_RPC);
+        const wallet = new ethers.Wallet(PAYOUT_PRIVATE_KEY, provider);
+        const contract = new ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, wallet);
+        const decimals = await contract.decimals();
+        const amountWei = ethers.utils.parseUnits(amount.toString(), decimals);
+        const tx = await contract.transfer(to, amountWei);
+        await tx.wait();
+        console.log(`[Payout] ✅ ${amount} PKMON → ${to} | TX: ${tx.hash}`);
+        res.json({ success: true, txHash: tx.hash });
+    } catch (error) {
+        console.error('[Payout] Failed:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
+// ─────────────────────────────────────────
 // 서버 시작
 // ─────────────────────────────────────────
 const PORT = process.env.PORT || 3001;
