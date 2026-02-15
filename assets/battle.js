@@ -234,7 +234,7 @@ class BattleEngine {
         this.log(`🔥 ${this.teamA[0].name} (HP: ${this.teamA[0].hp}) vs ${this.teamB[0].name} (HP: ${this.teamB[0].hp})`);
 
         // Start Combat Loop
-        this.combatInterval = setInterval(() => this.combatStep(), 2500); // Slightly slower for readability
+        this.combatInterval = setInterval(() => this.combatStep(), 2500);
     }
 
     combatStep() {
@@ -248,167 +248,116 @@ class BattleEngine {
         }
 
         // Determine Turn (Speed-based)
-        this.turn++;
-        const attacker = p1.speed >= p2.speed ? (this.turn % 2 !== 0 ? p1 : p2) : (this.turn % 2 !== 0 ? p2 : p1);
+        const attacker = p1.speed >= p2.speed ? p1 : p2;
         const defender = attacker === p1 ? p2 : p1;
-        const attackerTeam = attacker === p1 ? 'A' : 'B';
-        const defenderTeam = attacker === p1 ? 'teamB' : 'teamA';
 
-        // Select a random move
-        const move = attacker.moves && attacker.moves.length > 0
-            ? attacker.moves[Math.floor(Math.random() * attacker.moves.length)]
-            : { name: 'TACKLE' };
+        // Random Move (from loaded moves)
+        const move = attacker.moves.length > 0 
+            ? attacker.moves[Math.floor(Math.random() * attacker.moves.length)].name
+            : 'TACKLE';
 
-        // Damage Calc with type effectiveness
-        const crit = Math.random() < 0.1;
-        const typeBonus = this.checkTypeEffectiveness(attacker.types, defender.types);
-        let damage = Math.floor((attacker.attack / defender.defense) * 20 * typeBonus) + 5;
-        if (crit) damage *= 2;
+        // Calculate Damage
+        const baseDmg = Math.max(1, attacker.attack - defender.defense * 0.5);
+        const dmg = Math.floor(baseDmg * (0.85 + Math.random() * 0.3));
 
-        defender.hp -= damage;
-        if (defender.hp <= 0) {
-            defender.hp = 0;
-            defender.alive = false;
-        }
+        // Apply Damage
+        defender.hp = Math.max(0, defender.hp - dmg);
 
-        // Vivid Battle Log with move name
-        let logMsg = `⚡ ${attacker.name} used ${move.name}!`;
-        this.log(logMsg);
+        // Critical Hit / Super Effective
+        const crit = Math.random() < 0.15;
+        const superEffective = Math.random() < 0.25;
 
-        if (crit) this.log('   💥 CRITICAL HIT!');
-        if (typeBonus > 1) this.log('   ✨ Super effective!');
-        if (typeBonus < 1) this.log('   🛡️ Not very effective...');
-        this.log(`   └─ ${defender.name} took ${damage} damage! (HP: ${defender.hp}/${defender.maxHp})`);
+        if (crit) this.triggerChat('crit_hit', {});
+        if (superEffective) this.triggerChat('super_effective', {});
+        if (defender.hp / defender.maxHp < 0.3) this.triggerChat('low_hp', {});
 
-        // Update UI with visual effect
-        this.updateHpBar(defenderTeam, defender);
-        this.showAttackEffect(defenderTeam, crit);
+        this.triggerChat('move_used', { move });
 
-        // Chat Reactions (more frequent)
-        if (crit) {
-            this.triggerChat('crit_hit', { damage: damage });
-        }
-        if (typeBonus > 1) {
-            this.triggerChat('super_effective', {});
-        }
-        if (move.name) {
-            this.triggerChat('move_used', { move: move.name });
-        }
+        // Log Combat
+        this.log(`💥 ${attacker.name} used ${move} → ${dmg} DMG!${crit ? ' [CRITICAL!]' : ''}${superEffective ? ' [SUPER EFFECTIVE!]' : ''}`);
 
-        // Low HP warning
-        const hpPercent = (defender.hp / defender.maxHp) * 100;
-        if (hpPercent < 30 && hpPercent > 0) {
-            this.triggerChat('low_hp', {});
-        }
+        // Update Health Bars
+        this.updateHealthBar('teamA', this.teamA[0]);
+        this.updateHealthBar('teamB', this.teamB[0]);
+
+        this.turn++;
     }
 
-    showAttackEffect(targetTeamId, isCrit) {
-        const el = document.getElementById(targetTeamId);
-        if (!el) return;
-
-        // Flash effect
-        el.style.transition = 'filter 0.2s';
-        el.style.filter = isCrit ? 'brightness(2) saturate(2)' : 'brightness(1.5)';
-
-        setTimeout(() => {
-            el.style.filter = 'brightness(1)';
-        }, 200);
-
-        // Shake animation
-        const sprite = el.querySelector('.pokemon-sprite');
-        if (sprite) {
-            sprite.style.animation = 'shake 0.3s';
-            setTimeout(() => {
-                sprite.style.animation = '';
-            }, 300);
-        }
-    }
-
-    checkTypeEffectiveness(attackerTypes, defenderTypes) {
-        // Expanded type chart
-        const chart = {
-            'fire': { 'grass': 2, 'ice': 2, 'bug': 2, 'steel': 2, 'water': 0.5, 'fire': 0.5, 'rock': 0.5, 'dragon': 0.5 },
-            'water': { 'fire': 2, 'ground': 2, 'rock': 2, 'grass': 0.5, 'water': 0.5, 'dragon': 0.5 },
-            'grass': { 'water': 2, 'ground': 2, 'rock': 2, 'fire': 0.5, 'grass': 0.5, 'poison': 0.5, 'flying': 0.5, 'bug': 0.5, 'dragon': 0.5, 'steel': 0.5 },
-            'electric': { 'water': 2, 'flying': 2, 'grass': 0.5, 'electric': 0.5, 'dragon': 0.5, 'ground': 0 },
-            'ice': { 'grass': 2, 'ground': 2, 'flying': 2, 'dragon': 2, 'fire': 0.5, 'water': 0.5, 'ice': 0.5, 'steel': 0.5 },
-            'fighting': { 'normal': 2, 'ice': 2, 'rock': 2, 'dark': 2, 'steel': 2, 'poison': 0.5, 'flying': 0.5, 'psychic': 0.5, 'bug': 0.5, 'fairy': 0.5, 'ghost': 0 },
-            'poison': { 'grass': 2, 'fairy': 2, 'poison': 0.5, 'ground': 0.5, 'rock': 0.5, 'ghost': 0.5, 'steel': 0 },
-            'ground': { 'fire': 2, 'electric': 2, 'poison': 2, 'rock': 2, 'steel': 2, 'grass': 0.5, 'bug': 0.5, 'flying': 0 },
-            'flying': { 'grass': 2, 'fighting': 2, 'bug': 2, 'electric': 0.5, 'rock': 0.5, 'steel': 0.5 },
-            'psychic': { 'fighting': 2, 'poison': 2, 'psychic': 0.5, 'steel': 0.5, 'dark': 0 },
-            'bug': { 'grass': 2, 'psychic': 2, 'dark': 2, 'fire': 0.5, 'fighting': 0.5, 'poison': 0.5, 'flying': 0.5, 'ghost': 0.5, 'steel': 0.5, 'fairy': 0.5 },
-            'rock': { 'fire': 2, 'ice': 2, 'flying': 2, 'bug': 2, 'fighting': 0.5, 'ground': 0.5, 'steel': 0.5 },
-            'ghost': { 'psychic': 2, 'ghost': 2, 'dark': 0.5, 'normal': 0 },
-            'dragon': { 'dragon': 2, 'steel': 0.5, 'fairy': 0 },
-            'dark': { 'psychic': 2, 'ghost': 2, 'fighting': 0.5, 'dark': 0.5, 'fairy': 0.5 },
-            'steel': { 'ice': 2, 'rock': 2, 'fairy': 2, 'fire': 0.5, 'water': 0.5, 'electric': 0.5, 'steel': 0.5 },
-            'fairy': { 'fighting': 2, 'dragon': 2, 'dark': 2, 'fire': 0.5, 'poison': 0.5, 'steel': 0.5 }
-        };
-
-        let multiplier = 1;
-        attackerTypes.forEach(atkType => {
-            defenderTypes.forEach(defType => {
-                if (chart[atkType] && chart[atkType][defType] !== undefined) {
-                    multiplier *= chart[atkType][defType];
-                }
-            });
-        });
-        return multiplier;
-    }
-
-    updateHpBar(teamId, pokemon) {
+    updateHealthBar(teamId, pokemon) {
+        const hpPercent = (pokemon.hp / pokemon.maxHp) * 100;
         const el = document.getElementById(teamId);
         if (!el) return;
 
-        const pct = (pokemon.hp / pokemon.maxHp) * 100;
-        const bar = el.querySelector('.hp-bar');
-        if (!bar) return;
+        const hpBar = el.querySelector('.hp-bar');
+        if (!hpBar) return;
 
-        bar.style.width = `${pct}%`;
+        hpBar.style.width = `${hpPercent}%`;
 
-        if (pct < 30) bar.className = 'hp-bar hp-low';
-        else if (pct < 60) bar.className = 'hp-bar hp-mid';
-        else bar.className = 'hp-bar';
+        // Color Logic
+        if (hpPercent > 50) hpBar.className = 'hp-bar hp-high';
+        else if (hpPercent > 20) hpBar.className = 'hp-bar hp-medium';
+        else hpBar.className = 'hp-bar hp-low';
     }
 
-    endBattle(winningTeam) {
+    endBattle(winner) {
         clearInterval(this.combatInterval);
         this.gameState = 'ENDED';
-        this.updateStatus(`🏆 TEAM ${winningTeam} WINS!`);
-        this.log(`🏆 TEAM ${winningTeam} VICTORIOUS! 🏆`);
+        this.updateStatus(`🏆 TEAM ${winner} WINS!`);
+        this.log(`🎉 TEAM ${winner} WINS THE BATTLE!`);
+        this.triggerChat('win', {});
 
-        this.triggerChat('win', { team: winningTeam });
+        // Payout logic
+        const totalPool = this.bets.A + this.bets.B;
+        const winningBets = this.userBets.filter(b => b.team === winner);
+        const losingBets = this.userBets.filter(b => b.team !== winner);
 
-        // Multiple trainers react to the win
-        setTimeout(() => this.triggerChat('win', { team: winningTeam }), 1000);
-        setTimeout(() => this.triggerChat('win', { team: winningTeam }), 2000);
-
-        // Payout Logic
-        if (this.userBets.length > 0) {
-            const winners = this.userBets.filter(b => b.team === winningTeam);
-            const totalBetAmount = winners.reduce((sum, bet) => sum + bet.amount, 0);
-            const totalPool = this.bets.A + this.bets.B;
-            
-            if (winners.length > 0) {
-                setTimeout(() => this.showWinModal(totalBetAmount, totalPool), 1000);
-            } 
-            else {
-                const userBetAmount = this.userBets.reduce((sum, bet) => sum + bet.amount, 0);
-                setTimeout(() => this.showLoseModal(userBetAmount, totalPool), 1000);
-            }
+        if (winningBets.length > 0) {
+            winningBets.forEach(bet => {
+                this.log(`✅ You won ${bet.amount * 2} ${bet.token}!`);
+            });
+            this.showWinModal(winningBets[0].amount, totalPool);
+        } else if (losingBets.length > 0) {
+            this.log(`❌ You lost ${losingBets[0].amount} ${losingBets[0].token}`);
+            this.showLoseModal(losingBets[0].amount, totalPool);
         }
-        
 
-        // Restart Cycle after delay
+        // Restart after 15s
         setTimeout(() => {
-            this.syncToUTC(); // Resync to next UTC slot
+            this.syncToUTC();
             this.startNewCycle();
-        }, 10000);
+        }, 15000);
+    }
+
+    updateStatus(text) {
+        if (this.elements.status) {
+            this.elements.status.textContent = text;
+        }
+    }
+
+    log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        const entry = document.createElement('div');
+        entry.textContent = `[${timestamp}] ${message}`;
+        entry.style.marginBottom = '8px';
+        entry.style.fontSize = '0.95rem';
+        this.elements.log.appendChild(entry);
+        this.elements.log.scrollTop = this.elements.log.scrollHeight;
+
+        // Limit log size
+        const logs = this.elements.log.querySelectorAll('div');
+        if (logs.length > 100) {
+            logs[0].remove();
+        }
+    }
+
+    updatePoolDisplay() {
+        const total = this.bets.A + this.bets.B;
+        if (this.elements.pool) {
+            this.elements.pool.textContent = `${total.toFixed(2)} PKMON`;
+        }
     }
 
     // Betting
-
     async placeBet(team, amount, token) {
         const MAX_BET = 10;
         if (this.gameState !== 'BETTING') {
@@ -449,23 +398,6 @@ class BattleEngine {
             console.error('[Bet] Failed to send:', error);
             this.log(`❌ Bet failed: ${error.message}`);
         }
-    }
-    
-
-    updatePoolDisplay() {
-        // Only valid bets
-        const total = this.bets.A + this.bets.B;
-        this.elements.pool.textContent = total.toFixed(2);
-    }
-
-    updateStatus(text) {
-        this.elements.status.textContent = text;
-    }
-
-    log(msg) {
-        const line = document.createElement('div');
-        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        this.elements.log.prepend(line);
     }
 
     // Chat System (more active)
