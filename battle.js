@@ -577,8 +577,7 @@ async claimReward(betAmount) {
         const provider = new window.ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
-        const decimals = await contract.decimals();
-        const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), decimals);
+        const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), 18); // PKMON은 18 decimals
 
         const tx = await contract.transfer(BET_RECEIVER, amountWei);
         this.log(`⏳ Sending ${parsedAmount} PKMON... TX: ${tx.hash.slice(0,10)}...`);
