@@ -1,8 +1,8 @@
 // API Configuration
 const API_CONFIG = {
   // Monad Blockchain
-  MONAD_RPC_URL: 'https://testnet-rpc.monad.xyz',
-  MONAD_CHAIN_ID: 41454,
+  MONAD_RPC_URL: 'https://rpc2.monad.xyz',
+  MONAD_CHAIN_ID: 143,
 
   // Pokémon APIs
   POKEMON_API: 'https://pokeapi.co/api/v2',
@@ -32,3 +32,4 @@ const API_CONFIG = {
 };
 
 export default API_CONFIG;
+
