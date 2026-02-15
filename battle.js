@@ -566,10 +566,20 @@ async claimReward(betAmount) {
     // 온체인 PKMON 전송
     const BET_RECEIVER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
     const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+    // placeBet 함수 내부
     const ERC20_ABI = [
-        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
-        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
-    ];
+    { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
+];
+
+try {
+    if (window.walletConnector) await window.walletConnector.switchToMonad();
+
+    const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+    const signer = provider.getSigner();
+    const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+    const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), 18); // PKMON uses 18 decimals
+
+    const tx = await contract.transfer(BET_RECEIVER, amountWei);
 
     try {
         if (window.walletConnector) await window.walletConnector.switchToMonad();
