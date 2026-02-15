@@ -13,8 +13,8 @@ class PKMONOneTimePayment {
         // ✅ 결제 수신 지갑 주소 - 밈코인 DEV 지갑
         this.receiverAddress = '0xdF286dC4f9bB608f05369Dcd9B105dA94107b5C9'; // TODO: 실제 밈코인 DEV 지갑 주소로 변경
 
-        // 결제 금액 - 0.1 PKMON
-        this.paymentAmount = 0.1;
+        // 결제 금액 - 500,000 PKMON (수정됨)
+        this.paymentAmount = 500000;
 
         // 🔧 Backend API URL - 실제 서버 주소로 변경
         this.apiUrl = 'https://pkmon-payment-backend-api.onrender.com/api'; // ✅ Render.com 배포 URL // TODO: 실제 백엔드 서버 주소로 변경
@@ -46,6 +46,13 @@ class PKMONOneTimePayment {
                 "type": "function"
             }
         ];
+    }
+
+    // ─────────────────────────────────────────
+    // 숫자 포맷 함수 (1000 단위 콤마)
+    // ─────────────────────────────────────────
+    formatNumber(num) {
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     }
 
     // ─────────────────────────────────────────
@@ -302,11 +309,11 @@ class PKMONOneTimePayment {
                     <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 25px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                             <span style="color: #cbd5e1;">Payment Amount:</span>
-                            <span style="color: white; font-weight: bold; font-size: 20px;">${this.paymentAmount} PKMON</span>
+                            <span style="color: white; font-weight: bold; font-size: 20px;">${this.formatNumber(this.paymentAmount)} PKMON</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                             <span style="color: #cbd5e1;">Your Balance:</span>
-                            <span style="color: #10B981; font-weight: bold;">${balance} PKMON</span>
+                            <span style="color: #10B981; font-weight: bold;">${this.formatNumber(parseFloat(balance).toFixed(2))} PKMON</span>
                         </div>
                         <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
                         <div style="display: flex; justify-content: space-between;">
@@ -357,8 +364,8 @@ class PKMONOneTimePayment {
                         </div>
                         <h2 style="color: white; margin: 0 0 15px 0;">Insufficient PKMON Balance</h2>
                         <p style="color: #94a3b8; margin-bottom: 25px;">
-                            Current Balance: <strong style="color: #f59e0b;">${balance} PKMON</strong><br>
-                            Required Amount: <strong style="color: white;">${this.paymentAmount} PKMON</strong>
+                            Current Balance: <strong style="color: #f59e0b;">${this.formatNumber(parseFloat(balance).toFixed(2))} PKMON</strong><br>
+                            Required Amount: <strong style="color: white;">${this.formatNumber(this.paymentAmount)} PKMON</strong>
                         </p>
                         
                         <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
