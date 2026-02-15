@@ -24,8 +24,8 @@
                         Pokédex <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
                     </a>
                     <div class="dropdown-menu">
-                        <a href="javascript:void(0);" onclick="handleProtectedLink('pokedex.html')" class="dropdown-item">Pokédex</a>
-                        <a href="javascript:void(0);" onclick="handleProtectedLink('tcg-search.html')" class="dropdown-item">Poké TCG</a>
+                        <a href="pokedex.html" class="dropdown-item">Pokédex</a>
+                        <a href="tcg-search.html" class="dropdown-item">Poké TCG</a>
                         <a href="pokememe.html" class="dropdown-item">PokéMeme</a>
                     </div>
                 </li>
@@ -58,7 +58,7 @@
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="javascript:void(0);" onclick="handleProtectedLink('agent-dashboard.html')" class="nav-link btn-start">START</a>
+                    <a href="javascript:void(0);" onclick="goToDashboard()" class="nav-link btn-start">START</a>
                 </li>
                 <li class="nav-item">
                     <button class="btn-wallet" id="connectWalletBtn">
@@ -345,10 +345,46 @@
     </style>
 
     <!-- ✅ PKMON Payment System Scripts -->
-    <script src="./ethers.min.js"></script>
-    <script src="assets/pkmon-onetime-payment.js"></script>
-    <script src="assets/wallet.js"></script>
-    <script src="assets/payment-gate.js"></script>
+    <!-- utility 페이지는 지갑/결제 불필요 - 자유 접근 페이지 -->
+    <!-- START 버튼 전용 간단 게이트 (결제 완료된 지갑만 Dashboard 진입) -->
+    <script>
+        async function goToDashboard() {
+            // 지갑 미연결 체크
+            if (!window.ethereum) {
+                showSimpleToast('지갑을 먼저 연결해주세요!');
+                return;
+            }
+            let accounts = [];
+            try { accounts = await window.ethereum.request({ method: 'eth_accounts' }); } catch(e) {}
+            if (!accounts || accounts.length === 0) {
+                showSimpleToast('Connect Wallet 버튼을 클릭해서 지갑을 연결해주세요!');
+                return;
+            }
+            // 결제 이력 확인 (백엔드)
+            const addr = accounts[0].toLowerCase();
+            try {
+                const res = await fetch(`https://pkmon-payment-backend-api.onrender.com/api/check-payment/${addr}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.hasPaid) { window.location.href = 'agent-dashboard.html'; return; }
+                }
+            } catch(e) {}
+            // 로컬 폴백
+            try {
+                const paid = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                if (paid.includes(addr)) { window.location.href = 'agent-dashboard.html'; return; }
+            } catch(e) {}
+            showSimpleToast('Dashboard 이용을 위해 PKMON 결제가 필요합니다.\n메인 페이지에서 결제해주세요!');
+        }
+        function showSimpleToast(msg) {
+            const t = document.createElement('div');
+            t.style.cssText = 'position:fixed;top:80px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid rgba(239,68,68,0.5);border-radius:14px;padding:16px 20px;color:#fca5a5;font-size:14px;font-weight:600;z-index:99999;max-width:300px;line-height:1.6;box-shadow:0 8px 30px rgba(239,68,68,0.3);';
+            t.innerHTML = '🔒 ' + msg.replace(/\n/g, '<br>');
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 4000);
+        }
+    </script>
+
 </body>
 
 </html>
