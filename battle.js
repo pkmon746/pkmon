@@ -508,12 +508,6 @@ showLoseModal(betAmount, totalPool) {
 
 async claimReward(betAmount) {
     const payout = betAmount * 2;
-    const PAYOUT_SENDER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
-    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
-    const ERC20_ABI = [
-        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
-        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
-    ];
 
     try {
         if (window.walletConnector) await window.walletConnector.switchToMonad();
@@ -521,12 +515,7 @@ async claimReward(betAmount) {
         const provider = new window.ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
         const userAddress = await signer.getAddress();
-        const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
-        const decimals = await contract.decimals();
-        const payoutWei = window.ethers.utils.parseUnits(payout.toString(), decimals);
-
-        // 리워드 지갑에서 유저에게 전송 (리워드 지갑이 서명해야 하므로 백엔드 API 호출 필요)
-        // 현재는 프론트에서 처리 불가 → 백엔드 API로 요청
+        
         const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
