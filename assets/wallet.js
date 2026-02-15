@@ -190,14 +190,13 @@ class WalletConnector {
         this.updateUI();
         this.hideLogoutModal();
         
-        // ✅ FIX: 대시보드에서 로그아웃하면 홈페이지로 리다이렉트
-        const isDashboard = window.location.pathname.includes('agent-dashboard') || 
-                           window.location.pathname.includes('pokedex') ||
-                           window.location.pathname.includes('tcg-search') ||
-                           window.location.pathname.includes('pokememe') ||
-                           window.location.pathname.includes('utility');
+        // 결제가 필요한 페이지(대시보드)에서 로그아웃하면 홈으로 이동
+        // utility, pokememe은 자유 접근 페이지이므로 제외 → 그냥 reload
+        const isPaywalled = window.location.pathname.includes('agent-dashboard') || 
+                            window.location.pathname.includes('pokedex') ||
+                            window.location.pathname.includes('tcg-search');
         
-        if (isDashboard) {
+        if (isPaywalled) {
             setTimeout(() => window.location.href = 'index.html', 300);
         } else {
             setTimeout(() => window.location.reload(), 300);
