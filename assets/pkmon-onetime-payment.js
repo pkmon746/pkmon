@@ -299,11 +299,11 @@ class PKMONOneTimePayment {
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1);">
                     <div style="text-align: center; margin-bottom: 30px;">
-                        <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-coins" style="font-size: 48px; color: white;"></i>
+                        <div style="width: 120px; height: 120px; margin: 0 auto 20px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <img src="assets/pikachu-join.jpg" alt="Let's join PKMONAD" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
-                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 28px;">Payment for Content Access</h2>
-                        <p style="color: #94a3b8; margin: 0;">One-time payment for permanent access</p>
+                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px; line-height: 1.4;">Let's find Pokémon cards together<br>in the PKMONAD</h2>
+                        <p style="color: #94a3b8; margin: 0; font-size: 14px;">Please complete your payment to use the PKMONAD platform</p>
                     </div>
                     
                     <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 25px;">
@@ -359,8 +359,8 @@ class PKMONOneTimePayment {
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1);">
                     <div style="text-align: center;">
-                        <div style="width: 100px; height: 100px; margin: 0 auto 20px; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: white;"></i>
+                        <div style="width: 120px; height: 120px; margin: 0 auto 20px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
+                            <img src="assets/pikachu-buy.jpg" alt="Let's buy PKMON" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
                         <h2 style="color: white; margin: 0 0 15px 0;">Insufficient PKMON Balance</h2>
                         <p style="color: #94a3b8; margin-bottom: 25px;">
@@ -375,14 +375,18 @@ class PKMONOneTimePayment {
                             </p>
                             <ol style="color: #94a3b8; margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
                                 <li>Purchase on DEX (Decentralized Exchange)</li>
-                                <li>Buy on official memecoin website</li>
-                                <li>Get testnet tokens from Faucet</li>
+                                <li>Buy on official website</li>
                             </ol>
                         </div>
                         
-                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer;">
-                            <i class="fas fa-times"></i> Close
-                        </button>
+                        <div style="display: flex; gap: 12px;">
+                            <button onclick="this.closest('#pkmonInsufficientModal').remove()" style="flex: 1; padding: 14px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                                <i class="fas fa-times"></i> Close
+                            </button>
+                            <button onclick="window.open('https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777', '_blank')" style="flex: 2; padding: 14px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                                <i class="fas fa-shopping-cart"></i> Buy PKMON
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -545,4 +549,5 @@ window.addEventListener('DOMContentLoaded', async () => {
     // → accountsChanged 이벤트도 제거 (Rabby 자동 감지 차단)
     console.log('[PKMON] 결제 시스템 대기 중 (수동 트리거 필요)');
 });
+
 
