@@ -2,6 +2,20 @@
 <html lang="en">
 
 <head>
+
+    <!-- goToDashboard 전역 선언 - onclick 호출 전 반드시 존재해야 함 -->
+    <script>
+        function goToDashboard() {
+            // 스크립트 로드 완료 후 실제 함수로 교체됨
+            // 로드 전 클릭 시 대기
+            if (window._goToDashboardReady) {
+                window._goToDashboardReady();
+            } else {
+                // 아직 로드 중이면 대기 후 재시도
+                setTimeout(goToDashboard, 200);
+            }
+        }
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Utility - $PKMON - PKMONAD</title>
@@ -369,48 +383,38 @@
             });
         }
 
-        async function goToDashboard() {
+        // 실제 구현을 전역 참조로 등록
+        window._goToDashboardReady = async function() {
             // 1. 로그아웃 상태 체크
             if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
-                if (typeof showWalletAlert === 'function') {
-                    showWalletAlert('Please connect your wallet first!
-Click \"Connect Wallet\" button.');
-                }
+                if (typeof showWalletAlert === 'function') showWalletAlert('Please connect your wallet first!
+Click "Connect Wallet" button.');
                 if (typeof pulseWalletBtn === 'function') pulseWalletBtn();
                 return;
             }
-
-            // 2. walletConnector 연결 여부 체크
+            // 2. 지갑 연결 여부 체크
             const account = window.walletConnector && window.walletConnector.currentAccount;
             if (!account) {
-                if (typeof showWalletAlert === 'function') {
-                    showWalletAlert('Please connect your wallet first!
-Click \"Connect Wallet\" button.');
-                }
+                if (typeof showWalletAlert === 'function') showWalletAlert('Please connect your wallet first!
+Click "Connect Wallet" button.');
                 if (typeof pulseWalletBtn === 'function') pulseWalletBtn();
                 return;
             }
-
-            // 3. 로딩 스피너 표시
+            // 3. 로딩 스피너
             if (typeof showLoadingSpinner === 'function') showLoadingSpinner();
-
             try {
-                // 4. pkmonPayment 초기화 대기 (최대 5초)
                 await waitForPayment(5000);
             } catch(e) {
                 if (typeof hideLoadingSpinner === 'function') hideLoadingSpinner();
                 alert('System is loading. Please refresh (F5) and try again.');
                 return;
             }
-
-            // 5. 결제 게이트 실행
+            // 4. 결제 게이트 실행
             if (typeof handleProtectedLink === 'function') {
                 await handleProtectedLink('agent-dashboard.html');
             }
-        }
+        };
     </script>
 
 </body>
 </html>
-
-
