@@ -353,29 +353,64 @@
     <script src="assets/pkmon-onetime-payment.js"></script>
     
     <!-- Payment Gate -->
-    <script src="assets/payment-gate.js"></script>
-    
-    <!-- START 버튼 전용 간단 게이트 (결제 완료된 지갑만 Dashboard 진입) -->
+    <script src="assets/payment-gate.js"></script>    <!-- START 버튼 게이트 -->
     <script>
+        // pkmonPayment가 초기화될 때까지 최대 5초 대기
+        function waitForPayment(timeout = 5000) {
+            return new Promise((resolve, reject) => {
+                if (window.pkmonPayment) { resolve(); return; }
+                const start = Date.now();
+                const check = setInterval(() => {
+                    if (window.pkmonPayment) { clearInterval(check); resolve(); return; }
+                    if (Date.now() - start > timeout) { clearInterval(check); reject(new Error('timeout')); }
+                }, 100);
+            });
+        }
+
         async function goToDashboard() {
-            // payment-gate.js의 handleProtectedLink 사용
+            // 1. 로그아웃 상태 체크
+            if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
+                if (typeof showWalletAlert === 'function') {
+                    showWalletAlert('Please connect your wallet first!
+Click \"Connect Wallet\" button.');
+                }
+                if (typeof pulseWalletBtn === 'function') pulseWalletBtn();
+                return;
+            }
+
+            // 2. walletConnector 연결 여부 체크
+            const account = window.walletConnector && window.walletConnector.currentAccount;
+            if (!account) {
+                if (typeof showWalletAlert === 'function') {
+                    showWalletAlert('Please connect your wallet first!
+Click \"Connect Wallet\" button.');
+                }
+                if (typeof pulseWalletBtn === 'function') pulseWalletBtn();
+                return;
+            }
+
+            // 3. 로딩 스피너 표시
+            if (typeof showLoadingSpinner === 'function') showLoadingSpinner();
+
+            try {
+                // 4. pkmonPayment 초기화 대기 (최대 5초)
+                await waitForPayment(5000);
+            } catch(e) {
+                if (typeof hideLoadingSpinner === 'function') hideLoadingSpinner();
+                alert('System is loading. Please refresh (F5) and try again.');
+                return;
+            }
+
+            // 5. 결제 게이트 실행
             if (typeof handleProtectedLink === 'function') {
                 await handleProtectedLink('agent-dashboard.html');
-            } else {
-                showSimpleToast('시스템 로딩 중입니다. 잠시 후 다시 시도해주세요!');
             }
-        }
-        
-        function showSimpleToast(msg) {
-            const t = document.createElement('div');
-            t.style.cssText = 'position:fixed;top:80px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid rgba(239,68,68,0.5);border-radius:14px;padding:16px 20px;color:#fca5a5;font-size:14px;font-weight:600;z-index:99999;max-width:300px;line-height:1.6;box-shadow:0 8px 30px rgba(239,68,68,0.3);';
-            t.innerHTML = '🔒 ' + msg.replace(/\n/g, '<br>');
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 4000);
         }
     </script>
 
 </body>
-
 </html>
+
+
+
 
