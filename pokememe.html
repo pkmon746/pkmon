@@ -2,17 +2,13 @@
 <html lang="en">
 
 <head>
-
-    <!-- goToDashboard 전역 선언 - onclick 호출 전 반드시 존재해야 함 -->
+    <!-- goToDashboard 전역 선언 (head 최상단 - onclick보다 먼저 존재 보장) -->
     <script>
         function goToDashboard() {
-            // 스크립트 로드 완료 후 실제 함수로 교체됨
-            // 로드 전 클릭 시 대기
-            if (window._goToDashboardReady) {
-                window._goToDashboardReady();
+            if (typeof _runDashboardGate === 'function') {
+                _runDashboardGate();
             } else {
-                // 아직 로드 중이면 대기 후 재시도
-                setTimeout(goToDashboard, 200);
+                setTimeout(goToDashboard, 100);
             }
         }
     </script>
@@ -367,51 +363,209 @@
     <script src="assets/pkmon-onetime-payment.js"></script>
     
     <!-- Payment Gate -->
-    <script src="assets/payment-gate.js"></script>    <!-- START 버튼 게이트 -->
+    <script src="assets/payment-gate.js"></script>
+    <!-- Dashboard 게이트 -->
     <script>
-        // pkmonPayment가 초기화될 때까지 최대 5초 대기
-        function waitForPayment(timeout = 5000) {
-            return new Promise((resolve, reject) => {
-                if (window.pkmonPayment) { resolve(); return; }
-                const start = Date.now();
-                const check = setInterval(() => {
-                    if (window.pkmonPayment) { clearInterval(check); resolve(); return; }
-                    if (Date.now() - start > timeout) { clearInterval(check); reject(new Error('timeout')); }
-                }, 100);
-            });
+    async function _runDashboardGate() {
+        var BACKEND    = 'https://pkmon-payment-backend-api.onrender.com/api';
+        var TOKEN_ADDR = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        var RECEIVER   = '0xdF286dC4f9bB608f05369Dcd9B105dA94107b5C9';
+        var AMOUNT     = 500000;
+        var ERC20_ABI  = [
+            'function decimals() view returns (uint8)',
+            'function balanceOf(address) view returns (uint256)',
+            'function transfer(address to, uint256 amount) returns (bool)'
+        ];
+
+        function toast(msg) {
+            var old = document.getElementById('_gateToast');
+            if (old) old.remove();
+            var el = document.createElement('div');
+            el.id = '_gateToast';
+            el.style.cssText = 'position:fixed;top:80px;right:20px;background:linear-gradient(135deg,#1a1a2e,#16213e);border:2px solid rgba(239,68,68,0.5);border-radius:14px;padding:16px 20px;color:#fff;font-size:14px;font-weight:600;z-index:99999;max-width:320px;line-height:1.6;box-shadow:0 8px 30px rgba(0,0,0,0.4);';
+            el.innerHTML = msg;
+            if (!document.getElementById('_toastStyle')) {
+                var s = document.createElement('style');
+                s.id = '_toastStyle';
+                s.textContent = '@keyframes _tIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}';
+                document.head.appendChild(s);
+            }
+            document.body.appendChild(el);
+            setTimeout(function(){ var t=document.getElementById('_gateToast'); if(t)t.remove(); }, 4000);
         }
 
-        // 실제 구현을 전역 참조로 등록
-        window._goToDashboardReady = async function() {
-            // 1. 로그아웃 상태 체크
-            if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
-                if (typeof showWalletAlert === 'function') showWalletAlert('Please connect your wallet first!
-Click "Connect Wallet" button.');
-                if (typeof pulseWalletBtn === 'function') pulseWalletBtn();
-                return;
-            }
-            // 2. 지갑 연결 여부 체크
-            const account = window.walletConnector && window.walletConnector.currentAccount;
-            if (!account) {
-                if (typeof showWalletAlert === 'function') showWalletAlert('Please connect your wallet first!
-Click "Connect Wallet" button.');
-                if (typeof pulseWalletBtn === 'function') pulseWalletBtn();
-                return;
-            }
-            // 3. 로딩 스피너
-            if (typeof showLoadingSpinner === 'function') showLoadingSpinner();
+        function pulseWallet() {
+            var btn = document.getElementById('connectWalletBtn');
+            if (!btn) return;
+            btn.style.boxShadow = '0 0 0 3px rgba(239,68,68,0.6)';
+            btn.style.transform = 'scale(1.05)';
+            setTimeout(function(){ btn.style.boxShadow=''; btn.style.transform=''; }, 1500);
+        }
+
+        function showSpinner() {
+            var old = document.getElementById('_gateSpinner'); if (old) old.remove();
+            var el = document.createElement('div'); el.id = '_gateSpinner';
+            el.innerHTML = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99998;display:flex;justify-content:center;align-items:center;"><div style="text-align:center;"><div style="width:56px;height:56px;border:4px solid rgba(124,58,237,0.2);border-top:4px solid #7c3aed;border-radius:50%;margin:0 auto 16px;animation:_spin 1s linear infinite;"></div><p style="color:#fff;font-size:15px;font-weight:600;margin:0;">Verifying payment...</p></div></div><style>@keyframes _spin{to{transform:rotate(360deg)}}</style>';
+            document.body.appendChild(el);
+        }
+        function hideSpinner() { var s=document.getElementById('_gateSpinner'); if(s)s.remove(); }
+
+        // 1. 로그아웃 체크
+        if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
+            toast('&#x1F512; Please connect your wallet first!<br>Click "Connect Wallet" button.');
+            pulseWallet();
+            return;
+        }
+
+        // 2. 지갑 연결 체크
+        var account = window.walletConnector && window.walletConnector.currentAccount;
+        if (!account) {
+            toast('&#x1F512; Please connect your wallet first!<br>Click "Connect Wallet" button.');
+            pulseWallet();
+            return;
+        }
+
+        showSpinner();
+
+        try {
+            // 3. 백엔드 결제 이력 확인
+            var hasPaid = false;
             try {
-                await waitForPayment(5000);
+                var res = await fetch(BACKEND + '/check-payment/' + account.toLowerCase());
+                if (res.ok) { var d = await res.json(); hasPaid = d.hasPaid; }
             } catch(e) {
-                if (typeof hideLoadingSpinner === 'function') hideLoadingSpinner();
-                alert('System is loading. Please refresh (F5) and try again.');
+                try {
+                    var local = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                    hasPaid = local.indexOf(account.toLowerCase()) !== -1;
+                } catch(e2) {}
+            }
+
+            if (hasPaid) {
+                hideSpinner();
+                window.location.href = 'agent-dashboard.html';
                 return;
             }
-            // 4. 결제 게이트 실행
-            if (typeof handleProtectedLink === 'function') {
-                await handleProtectedLink('agent-dashboard.html');
+
+            // 4. ethers 확인
+            if (typeof window.ethers === 'undefined') {
+                hideSpinner();
+                toast('&#x26A0; Wallet library not loaded. Please refresh (F5).');
+                return;
             }
-        };
+
+            // 5. PKMON 잔액 확인
+            var provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            var contract = new window.ethers.Contract(TOKEN_ADDR, ERC20_ABI, provider);
+            var decimals = await contract.decimals();
+            var raw = await contract.balanceOf(account);
+            var balance = parseFloat(window.ethers.utils.formatUnits(raw, decimals));
+
+            hideSpinner();
+
+            if (balance < AMOUNT) {
+                _showInsufficientModal(balance, AMOUNT);
+            } else {
+                _showPaymentModal(balance, account, AMOUNT, TOKEN_ADDR, RECEIVER, BACKEND);
+            }
+
+        } catch(err) {
+            hideSpinner();
+            console.error('[Gate]', err);
+            toast('&#x26A0; An error occurred. Please try again.');
+        }
+    }
+
+    function _showInsufficientModal(balance, required) {
+        var old = document.getElementById('_insuffModal'); if (old) old.remove();
+        var el = document.createElement('div'); el.id = '_insuffModal';
+        var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">'
+            + '<div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">'
+            + '<div style="width:88px;height:88px;border-radius:50%;overflow:hidden;margin:0 auto 1.5rem;border:3px solid rgba(239,68,68,0.4);">'
+            + '<img src="assets/pikachu-buy.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">'
+            + '</div>'
+            + '<div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:1rem;">Insufficient PKMON Balance</div>'
+            + '<div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:1rem;margin-bottom:1.5rem;">'
+            + '<div style="color:#94a3b8;font-size:0.85rem;margin-bottom:4px;">Current Balance:</div>'
+            + '<div style="color:#fbbf24;font-weight:700;font-size:1.1rem;">' + balance.toLocaleString() + ' PKMON</div>'
+            + '<div style="color:#94a3b8;font-size:0.85rem;margin:8px 0 4px;">Required Amount:</div>'
+            + '<div style="color:#fff;font-weight:700;font-size:1.1rem;">' + required.toLocaleString() + ' PKMON</div>'
+            + '</div>'
+            + '<div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:12px;margin-bottom:1.5rem;text-align:left;">'
+            + '<div style="color:#10B981;font-size:0.85rem;font-weight:600;margin-bottom:6px;">&#x1F6D2; How to buy PKMON:</div>'
+            + '<div style="color:#94a3b8;font-size:0.82rem;line-height:1.7;">1. Purchase on DEX (Decentralized Exchange)<br>2. Buy on official website</div>'
+            + '</div>'
+            + '<div style="display:flex;gap:10px;">'
+            + '<button id="_insuffClose" style="flex:1;padding:12px;background:rgba(255,255,255,0.08);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">&#x2715; Close</button>'
+            + '<button id="_buyBtn" style="flex:2;padding:12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">&#x1F6D2; Buy PKMON</button>'
+            + '</div></div></div>';
+        el.innerHTML = html;
+        document.body.appendChild(el);
+        document.getElementById('_insuffClose').onclick = function(){ el.remove(); };
+        document.getElementById('_buyBtn').onclick = function(){ window.open('https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777','_blank'); };
+    }
+
+    function _showPaymentModal(balance, account, amount, tokenAddr, receiver, backend) {
+        var old = document.getElementById('_payModal'); if (old) old.remove();
+        var el = document.createElement('div'); el.id = '_payModal';
+        var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">'
+            + '<div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(124,58,237,0.3);">'
+            + '<div style="width:64px;height:64px;background:linear-gradient(135deg,#7c3aed,#6d28d9);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:1.8rem;">&#x1F510;</div>'
+            + '<div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">One-Time Access Payment</div>'
+            + '<div style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;">Pay once, access forever</div>'
+            + '<div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:1rem;margin-bottom:1.5rem;">'
+            + '<div style="color:#94a3b8;font-size:0.82rem;margin-bottom:4px;">Payment Amount</div>'
+            + '<div style="color:#fff;font-weight:800;font-size:1.4rem;">' + amount.toLocaleString() + ' PKMON</div>'
+            + '<div style="color:#94a3b8;font-size:0.75rem;margin-top:6px;">Your balance: ' + balance.toLocaleString() + ' PKMON</div>'
+            + '</div>'
+            + '<div style="display:flex;gap:10px;">'
+            + '<button id="_payCancel" style="flex:1;padding:12px;background:rgba(255,255,255,0.08);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">&#x2715; Cancel</button>'
+            + '<button id="_payBtn" style="flex:2;padding:12px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">&#x1F4B3; Pay &amp; Enter</button>'
+            + '</div></div></div>';
+        el.innerHTML = html;
+        document.body.appendChild(el);
+
+        document.getElementById('_payCancel').onclick = function(){ el.remove(); };
+        document.getElementById('_payBtn').addEventListener('click', async function() {
+            var btn = document.getElementById('_payBtn');
+            btn.textContent = 'Processing...'; btn.disabled = true;
+            try {
+                if (window.walletConnector && window.walletConnector.switchToMonad) {
+                    await window.walletConnector.switchToMonad();
+                }
+                var p2 = new window.ethers.providers.Web3Provider(window.ethereum);
+                var signer = p2.getSigner();
+                var erc20 = new window.ethers.Contract(tokenAddr, [
+                    'function decimals() view returns (uint8)',
+                    'function transfer(address,uint256) returns (bool)'
+                ], signer);
+                var dec = await erc20.decimals();
+                var wei = window.ethers.utils.parseUnits(amount.toString(), dec);
+                var tx = await erc20.transfer(receiver, wei);
+                btn.textContent = 'Confirming...';
+                await tx.wait();
+                try {
+                    await fetch(backend + '/record-payment', {
+                        method: 'POST', headers: {'Content-Type':'application/json'},
+                        body: JSON.stringify({address: account, txHash: tx.hash, amount: amount, timestamp: Date.now()})
+                    });
+                } catch(e) {}
+                try {
+                    var paid = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                    if (paid.indexOf(account.toLowerCase()) === -1) {
+                        paid.push(account.toLowerCase());
+                        localStorage.setItem('pkmon_paid_users', JSON.stringify(paid));
+                    }
+                } catch(e) {}
+                var modal = document.getElementById('_payModal'); if (modal) modal.remove();
+                setTimeout(function(){ window.location.href = 'agent-dashboard.html'; }, 500);
+            } catch(err) {
+                var b = document.getElementById('_payBtn');
+                if (b) { b.innerHTML = '&#x1F4B3; Pay &amp; Enter'; b.disabled = false; }
+                console.error('[Payment]', err);
+                alert('Payment failed: ' + (err.message || 'Unknown error'));
+            }
+        });
+    }
     </script>
 
 </body>
