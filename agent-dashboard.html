@@ -85,13 +85,28 @@
             <!-- CERT Input Section -->
             <div class="cert-input-section fade-in">
                 <div class="input-card glass-card">
-                    <h3><i class="fas fa-certificate"></i> Enter PSA CERT Number</h3>
+                    <h3><i class="fas fa-certificate"></i> Enter PSA CERT Number or Keyword</h3>
                     <div class="cert-input-group">
-                        <input type="text" id="certInput" placeholder="Enter PSA certification number (e.g., 12345678)">
+                        <input type="text" id="certInput" placeholder="CERT number (e.g., 12345678) or keyword (e.g., Gengar)">
                         <button class="btn-primary" onclick="startAnalysis()">
                             <i class="fas fa-rocket"></i> Start Analysis
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <div class="keyword-picker-section fade-in" id="keywordPickerSection" style="display: none;">
+                <div class="glass-card keyword-picker-card">
+                    <div class="keyword-picker-header">
+                        <h3><i class="fas fa-images"></i> Select Cards From Keyword Search</h3>
+                        <span class="keyword-picker-meta" id="keywordPickerMeta"></span>
+                    </div>
+                    <div class="keyword-picker-actions">
+                        <button class="btn-primary" onclick="startSelectedKeywordAnalysis()">
+                            <i class="fas fa-play"></i> Analyze Selected
+                        </button>
+                    </div>
+                    <div class="keyword-picker-grid" id="keywordPickerGrid"></div>
                 </div>
             </div>
 
@@ -110,7 +125,7 @@
                         <div class="welcome-message">
                             <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png"
                                 alt="Pikachu" style="width: 80px; height: 80px; margin-bottom: 1rem;">
-                            <p>Enter a PSA CERT number to begin the arbitrage analysis!</p>
+                            <p>Enter a PSA CERT number or keyword to begin analysis!</p>
                         </div>
                     </div>
                 </div>
@@ -197,6 +212,97 @@
                     <div class="comparison-grid" id="comparisonGrid"></div>
                 </div>
             </div>
+
+            <!-- SNKRDUNK Transaction Data -->
+            <div class="snkrdunk-section fade-in" id="snkrdunkSection">
+                <div class="glass-card" style="max-width: 1200px; margin: 0 auto;">
+                    <div class="snkr-header">
+                        <h2><i class="fas fa-chart-line"></i> SNKRDUNK Transaction Data</h2>
+                        <div class="snkr-stats-bar" id="snkrStatsBar">
+                            <span class="snkr-stat"><strong id="statTotalSold">-</strong> Sold</span>
+                            <span class="snkr-stat"><strong id="statTotalActive">-</strong> Active</span>
+                            <span class="snkr-stat"><strong id="statTotalCards">-</strong> Cards</span>
+                        </div>
+                    </div>
+
+                    <!-- Card Selector -->
+                    <div class="snkr-card-selector">
+                        <label>Card:</label>
+                        <select id="snkrCardSelect" onchange="loadSnkrCardData()">
+                            <option value="">All Cards</option>
+                        </select>
+                        <label>Condition:</label>
+                        <select id="snkrConditionSelect" onchange="loadSnkrCardData()">
+                            <option value="">All</option>
+                            <option value="PSA 10">PSA 10</option>
+                            <option value="PSA 9">PSA 9</option>
+                            <option value="PSA 8 or under">PSA 8-</option>
+                            <option value="ARS 10">ARS 10</option>
+                        </select>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="snkr-tabs">
+                        <button class="snkr-tab active" onclick="switchSnkrTab('sold')">
+                            <i class="fas fa-gavel"></i> SOLD
+                        </button>
+                        <button class="snkr-tab" onclick="switchSnkrTab('listings')">
+                            <i class="fas fa-tag"></i> Listings
+                        </button>
+                        <button class="snkr-tab" onclick="switchSnkrTab('chart')">
+                            <i class="fas fa-chart-area"></i> Price Chart
+                        </button>
+                    </div>
+
+                    <!-- SOLD Tab -->
+                    <div class="snkr-tab-content active" id="snkrTabSold">
+                        <div class="snkr-summary" id="soldSummary"></div>
+                        <div class="snkr-table-wrap">
+                            <table class="snkr-table">
+                                <thead>
+                                    <tr>
+                                        <th>Card</th>
+                                        <th>Price</th>
+                                        <th>Condition</th>
+                                        <th>Date</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="soldTableBody">
+                                    <tr><td colspan="4" class="snkr-empty">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Listings Tab -->
+                    <div class="snkr-tab-content" id="snkrTabListings">
+                        <div class="snkr-summary" id="listingsSummary"></div>
+                        <div class="snkr-table-wrap">
+                            <table class="snkr-table">
+                                <thead>
+                                    <tr>
+                                        <th>Card</th>
+                                        <th>Price</th>
+                                        <th>Condition</th>
+                                        <th>Listed Since</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="listingsTableBody">
+                                    <tr><td colspan="4" class="snkr-empty">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Chart Tab -->
+                    <div class="snkr-tab-content" id="snkrTabChart">
+                        <canvas id="snkrPriceChart" height="300"></canvas>
+                        <div class="snkr-chart-empty" id="chartEmpty" style="display:none;">
+                            <p>Select a card to view price history</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -247,6 +353,139 @@
         .cert-input-group input:focus {
             outline: none;
             border-color: var(--primary-purple);
+        }
+
+        .keyword-picker-section {
+            max-width: 1200px;
+            margin: -2rem auto 2rem;
+        }
+
+        .keyword-picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .keyword-picker-header h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+        .keyword-picker-header h3 i {
+            color: var(--secondary-purple);
+            margin-right: 0.55rem;
+        }
+
+        .keyword-picker-meta {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .keyword-picker-actions {
+            margin-top: 0.9rem;
+            display: flex;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .keyword-picker-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            border-radius: 10px;
+            padding: 0.7rem 0.95rem;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        .keyword-picker-grid {
+            margin-top: 1rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 0.75rem;
+            max-height: 340px;
+            overflow-y: auto;
+            padding-right: 0.2rem;
+        }
+
+        .keyword-picker-item {
+            width: 100%;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--text-primary);
+            text-align: left;
+            display: flex;
+            gap: 0.7rem;
+            padding: 0.6rem;
+            cursor: pointer;
+            transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+        }
+
+        .keyword-picker-item:hover {
+            border-color: var(--secondary-purple);
+            transform: translateY(-2px);
+        }
+
+        .keyword-picker-item.selected {
+            border-color: var(--secondary-purple);
+            background: rgba(167, 139, 250, 0.14);
+        }
+
+        .keyword-picker-thumb-wrap {
+            width: 60px;
+            min-width: 60px;
+            height: 84px;
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--glass-border);
+        }
+
+        .keyword-picker-thumb {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .keyword-picker-thumb-fallback {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 0.68rem;
+        }
+
+        .keyword-picker-body {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .keyword-picker-name {
+            font-size: 0.82rem;
+            font-weight: 600;
+            line-height: 1.35;
+            color: var(--text-primary);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .keyword-picker-line {
+            display: block;
+            margin-top: 0.2rem;
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+        }
+
+        .keyword-picker-line.mono {
+            font-family: monospace;
         }
 
         .agent-chat-section {
@@ -525,6 +764,224 @@
             color: #EF4444;
         }
 
+        /* SNKRDUNK Transaction Section */
+        .snkrdunk-section {
+            margin-top: 3rem;
+        }
+
+        .snkr-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .snkr-header h2 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #8B5CF6, #EC4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .snkr-header h2 i {
+            -webkit-text-fill-color: #8B5CF6;
+        }
+
+        .snkr-stats-bar {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .snkr-stat {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .snkr-stat strong {
+            color: var(--accent-yellow);
+            font-size: 1.1rem;
+        }
+
+        .snkr-card-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .snkr-card-selector label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .snkr-card-selector select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            min-width: 180px;
+        }
+
+        .snkr-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--glass-border);
+            margin-bottom: 1.5rem;
+        }
+
+        .snkr-tab {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            font-size: 1rem;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .snkr-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .snkr-tab.active {
+            color: #8B5CF6;
+            border-bottom-color: #8B5CF6;
+        }
+
+        .snkr-tab i {
+            margin-right: 0.5rem;
+        }
+
+        .snkr-tab-content {
+            display: none;
+        }
+
+        .snkr-tab-content.active {
+            display: block;
+        }
+
+        .snkr-summary {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .snkr-summary-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            min-width: 120px;
+        }
+
+        .snkr-summary-item .label {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .snkr-summary-item .value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .snkr-summary-item .value.green { color: var(--accent-green); }
+        .snkr-summary-item .value.yellow { color: var(--accent-yellow); }
+        .snkr-summary-item .value.red { color: #EF4444; }
+
+        .snkr-table-wrap {
+            overflow-x: auto;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .snkr-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .snkr-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .snkr-table th {
+            background: rgba(139, 92, 246, 0.15);
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .snkr-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .snkr-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .snkr-table .price-cell {
+            font-weight: 600;
+            color: var(--accent-green);
+        }
+
+        .snkr-table .condition-badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .condition-badge.psa10 {
+            background: rgba(16, 185, 129, 0.15);
+            color: #10B981;
+        }
+
+        .condition-badge.psa9 {
+            background: rgba(59, 130, 246, 0.15);
+            color: #3B82F6;
+        }
+
+        .condition-badge.other {
+            background: rgba(156, 163, 175, 0.15);
+            color: #9CA3AF;
+        }
+
+        .snkr-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 3rem 0;
+        }
+
+        .snkr-chart-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 4rem 0;
+        }
+
+        #snkrPriceChart {
+            width: 100%;
+            max-height: 350px;
+        }
+
         .nav-toggle {
             display: none;
         }
@@ -588,6 +1045,7 @@
         }
     </style>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script type="module" src="assets/config.js"></script>
     <script src="assets/wallet.js"></script>
     <script src="assets/agents.js"></script>
@@ -672,6 +1130,224 @@
             // Start speaking after initial delay
             setTimeout(speak, 2000);
         });
+
+        // ── SNKRDUNK Transaction Data ──────────────────────
+        const SNKR_API_BASE = window.location.origin;
+        let snkrPriceChart = null;
+
+        async function initSnkrSection() {
+            try {
+                const res = await fetch(`${SNKR_API_BASE}/api/snkrdunk/stats`);
+                const data = await res.json();
+                if (!data.success) return;
+
+                document.getElementById('statTotalSold').textContent = data.totals.totalSold;
+                document.getElementById('statTotalActive').textContent = data.totals.totalActive;
+                document.getElementById('statTotalCards').textContent = data.totals.totalCards;
+
+                const select = document.getElementById('snkrCardSelect');
+                data.cards.forEach(card => {
+                    const opt = document.createElement('option');
+                    opt.value = card.card_id;
+                    opt.textContent = `${card.card_name || card.full_title || card.card_id} (${card.sold_count} sold)`;
+                    select.appendChild(opt);
+                });
+
+                loadSnkrCardData();
+            } catch (err) {
+                console.error('Failed to load SNKRDUNK stats:', err);
+            }
+        }
+
+        async function loadSnkrCardData() {
+            const cardId = document.getElementById('snkrCardSelect').value;
+            const condition = document.getElementById('snkrConditionSelect').value;
+            const condParam = condition ? `&condition=${encodeURIComponent(condition)}` : '';
+
+            // Load sold
+            try {
+                const soldUrl = cardId
+                    ? `${SNKR_API_BASE}/api/snkrdunk/sold/${cardId}?limit=200${condParam}`
+                    : `${SNKR_API_BASE}/api/snkrdunk/sold?limit=200${condParam}`;
+                const soldRes = await fetch(soldUrl);
+                const soldData = await soldRes.json();
+                renderSoldTable(soldData);
+            } catch (err) {
+                document.getElementById('soldTableBody').innerHTML = '<tr><td colspan="4" class="snkr-empty">Failed to load</td></tr>';
+            }
+
+            // Load listings
+            try {
+                const listUrl = cardId
+                    ? `${SNKR_API_BASE}/api/snkrdunk/listings/${cardId}?limit=200${condParam}`
+                    : `${SNKR_API_BASE}/api/snkrdunk/listings?limit=200${condParam}`;
+                const listRes = await fetch(listUrl);
+                const listData = await listRes.json();
+                renderListingsTable(listData);
+            } catch (err) {
+                document.getElementById('listingsTableBody').innerHTML = '<tr><td colspan="4" class="snkr-empty">Failed to load</td></tr>';
+            }
+
+            // Load chart
+            if (cardId) {
+                try {
+                    const chartRes = await fetch(`${SNKR_API_BASE}/api/snkrdunk/sold/${cardId}?limit=500`);
+                    const chartData = await chartRes.json();
+                    renderPriceChart(chartData);
+                } catch {}
+            } else {
+                if (snkrPriceChart) { snkrPriceChart.destroy(); snkrPriceChart = null; }
+                document.getElementById('chartEmpty').style.display = 'block';
+            }
+        }
+
+        function conditionBadge(cond) {
+            if (!cond) return '<span class="condition-badge other">-</span>';
+            const cls = cond === 'PSA 10' ? 'psa10' : cond === 'PSA 9' ? 'psa9' : 'other';
+            return `<span class="condition-badge ${cls}">${cond}</span>`;
+        }
+
+        function formatDate(ts) {
+            if (!ts) return '-';
+            const d = new Date(ts);
+            return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' });
+        }
+
+        function renderSoldTable(data) {
+            const tbody = document.getElementById('soldTableBody');
+            const summary = document.getElementById('soldSummary');
+
+            if (!data.success || !data.data.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="snkr-empty">No sold transactions found</td></tr>';
+                summary.innerHTML = '';
+                return;
+            }
+
+            const rows = data.data;
+            const prices = rows.map(r => r.price_usd).filter(p => p != null);
+            const avg = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+            const min = prices.length ? Math.min(...prices) : 0;
+            const max = prices.length ? Math.max(...prices) : 0;
+
+            summary.innerHTML = `
+                <div class="snkr-summary-item"><div class="label">Total Sold</div><div class="value">${data.total}</div></div>
+                <div class="snkr-summary-item"><div class="label">Avg Price</div><div class="value yellow">$${avg}</div></div>
+                <div class="snkr-summary-item"><div class="label">Min</div><div class="value green">$${min}</div></div>
+                <div class="snkr-summary-item"><div class="label">Max</div><div class="value red">$${max}</div></div>
+            `;
+
+            tbody.innerHTML = rows.map(r => `
+                <tr>
+                    <td>${r.card_name || r.card_id}</td>
+                    <td class="price-cell">$${r.price_usd || '-'}</td>
+                    <td>${conditionBadge(r.condition)}</td>
+                    <td>${formatDate(r.first_seen_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderListingsTable(data) {
+            const tbody = document.getElementById('listingsTableBody');
+            const summary = document.getElementById('listingsSummary');
+
+            if (!data.success || !data.data.length) {
+                tbody.innerHTML = '<tr><td colspan="4" class="snkr-empty">No active listings found</td></tr>';
+                summary.innerHTML = '';
+                return;
+            }
+
+            const rows = data.data;
+            const prices = rows.map(r => r.price_usd).filter(p => p != null);
+            const cheapest = prices.length ? Math.min(...prices) : 0;
+            const avg = prices.length ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
+
+            summary.innerHTML = `
+                <div class="snkr-summary-item"><div class="label">Active Listings</div><div class="value">${data.total}</div></div>
+                <div class="snkr-summary-item"><div class="label">Cheapest</div><div class="value green">$${cheapest}</div></div>
+                <div class="snkr-summary-item"><div class="label">Avg Price</div><div class="value yellow">$${avg}</div></div>
+            `;
+
+            tbody.innerHTML = rows.map((r, i) => `
+                <tr${i === 0 ? ' style="background: rgba(16,185,129,0.05);"' : ''}>
+                    <td>${r.card_name || r.card_id}</td>
+                    <td class="price-cell">$${r.price_usd || '-'}${i === 0 ? ' <small style="color:#10B981;">(cheapest)</small>' : ''}</td>
+                    <td>${conditionBadge(r.condition)}</td>
+                    <td>${formatDate(r.first_seen_at)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderPriceChart(data) {
+            document.getElementById('chartEmpty').style.display = 'none';
+            const canvas = document.getElementById('snkrPriceChart');
+
+            if (!data.success || !data.data.length) {
+                if (snkrPriceChart) { snkrPriceChart.destroy(); snkrPriceChart = null; }
+                document.getElementById('chartEmpty').style.display = 'block';
+                return;
+            }
+
+            const sorted = [...data.data].reverse();
+            const labels = sorted.map(r => formatDate(r.first_seen_at));
+            const prices = sorted.map(r => r.price_usd);
+            const conditions = sorted.map(r => r.condition || 'Unknown');
+
+            // Group by condition for color
+            const bgColors = sorted.map(r => {
+                if (r.condition === 'PSA 10') return 'rgba(16, 185, 129, 0.7)';
+                if (r.condition === 'PSA 9') return 'rgba(59, 130, 246, 0.7)';
+                return 'rgba(156, 163, 175, 0.5)';
+            });
+
+            if (snkrPriceChart) snkrPriceChart.destroy();
+
+            snkrPriceChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Sold Price (USD)',
+                        data: prices,
+                        backgroundColor: bgColors,
+                        borderRadius: 4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `$${ctx.raw} (${conditions[ctx.dataIndex]})`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { callback: v => `$${v}`, color: '#9CA3AF' },
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                        },
+                        x: {
+                            ticks: { color: '#9CA3AF', maxTicksLimit: 15 },
+                            grid: { display: false },
+                        }
+                    }
+                }
+            });
+        }
+
+        function switchSnkrTab(tab) {
+            document.querySelectorAll('.snkr-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.snkr-tab-content').forEach(c => c.classList.remove('active'));
+
+            const tabMap = { sold: 'snkrTabSold', listings: 'snkrTabListings', chart: 'snkrTabChart' };
+            document.getElementById(tabMap[tab]).classList.add('active');
+            event.currentTarget.classList.add('active');
+        }
+
+        // Auto-load SNKRDUNK data
+        setTimeout(initSnkrSection, 1000);
     </script>
 </body>
 

@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Local SNKRDUNK Keyword Test</title>
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0e1117;
+    color: #e6edf3;
+    padding: 24px;
+}
+h1 {
+    margin: 0 0 8px;
+    font-size: 1.6rem;
+}
+p.desc {
+    margin: 0 0 18px;
+    color: #9da7b3;
+}
+.panel {
+    border: 1px solid #2a2f37;
+    background: #151b23;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 14px;
+}
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 110px 110px 110px 170px;
+    gap: 10px;
+}
+.row + .row {
+    margin-top: 10px;
+}
+label {
+    display: block;
+    font-size: 0.78rem;
+    color: #8a95a3;
+    margin-bottom: 6px;
+}
+input {
+    width: 100%;
+    border: 1px solid #2f3742;
+    background: #0f141a;
+    color: #e6edf3;
+    padding: 10px 11px;
+    border-radius: 8px;
+    outline: none;
+}
+select {
+    width: 100%;
+    border: 1px solid #2f3742;
+    background: #0f141a;
+    color: #e6edf3;
+    padding: 10px 11px;
+    border-radius: 8px;
+    outline: none;
+}
+select:focus {
+    border-color: #4ea1ff;
+}
+input:focus {
+    border-color: #4ea1ff;
+}
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+}
+button {
+    border: 1px solid #2f3742;
+    background: #1f6feb;
+    color: #fff;
+    padding: 9px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+}
+button.secondary {
+    background: #202938;
+}
+button:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+.status {
+    margin-top: 10px;
+    font-size: 0.85rem;
+    color: #8a95a3;
+}
+.status.error { color: #ff8e8e; }
+.status.ok { color: #74e08b; }
+.summary-grid {
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(6, minmax(120px, 1fr));
+}
+.summary-item {
+    background: #0f141a;
+    border: 1px solid #2a2f37;
+    border-radius: 8px;
+    padding: 10px;
+}
+.summary-item .k {
+    color: #8a95a3;
+    font-size: 0.75rem;
+}
+.summary-item .v {
+    margin-top: 4px;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+.section-title {
+    margin: 0 0 8px;
+    font-size: 1rem;
+}
+.table-wrap {
+    overflow: auto;
+    max-height: 460px;
+    border: 1px solid #2a2f37;
+    border-radius: 8px;
+}
+.picker-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.picker-info {
+    color: #9da7b3;
+    font-size: 0.82rem;
+    margin-bottom: 10px;
+}
+.thumb-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 420px;
+    overflow-y: auto;
+    border: 1px solid #2a2f37;
+    border-radius: 10px;
+    padding: 8px;
+    background: #0f141a;
+}
+.thumb-card {
+    border: 1px solid #2f3742;
+    border-radius: 9px;
+    background: #101722;
+    color: #e6edf3;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+}
+.thumb-card.selected {
+    border-color: #4ea1ff;
+    background: rgba(78, 161, 255, 0.12);
+}
+.thumb-img-wrap {
+    width: 52px;
+    min-width: 52px;
+    height: 72px;
+    border-radius: 7px;
+    overflow: hidden;
+    border: 1px solid #2a2f37;
+    background: #0a0f14;
+}
+.thumb-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.thumb-fallback {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #66717f;
+    font-size: 0.65rem;
+}
+.thumb-body {
+    min-width: 0;
+    flex: 1;
+}
+.thumb-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.35;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+.thumb-meta {
+    margin-top: 2px;
+    font-size: 0.7rem;
+    color: #9da7b3;
+}
+.thumb-meta.mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 760px;
+}
+th, td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #212933;
+    font-size: 0.83rem;
+}
+th {
+    position: sticky;
+    top: 0;
+    background: #182130;
+    color: #b9c3cf;
+}
+td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.77rem; }
+.muted { color: #8a95a3; }
+.price { color: #7be495; font-weight: 600; }
+.empty {
+    padding: 18px 4px;
+    color: #8a95a3;
+    font-size: 0.85rem;
+}
+@media (max-width: 980px) {
+    .row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+</style>
+</head>
+<body>
+<h1>SNKRDUNK Keyword Local Test</h1>
+<p class="desc">Keyword -> /api/snkrdunk/live-search (fallback: /api/snkrdunk/cards) -> /api/snkrdunk/on-sale/:cardId merge test + condition filter.</p>
+
+<div class="panel">
+    <div class="row">
+        <div>
+            <label for="apiBase">API Base</label>
+            <input id="apiBase" value="http://localhost:3000" />
+        </div>
+        <div>
+            <label for="keyword">Keyword</label>
+            <input id="keyword" value="gengar" />
+        </div>
+        <div>
+            <label for="cardLimit">Card Limit</label>
+            <input id="cardLimit" type="number" min="1" max="50" value="20" />
+        </div>
+        <div>
+            <label for="perPage">Per Page</label>
+            <input id="perPage" type="number" min="1" max="50" value="20" />
+        </div>
+        <div>
+            <label for="maxPages">Max Pages</label>
+            <input id="maxPages" type="number" min="1" max="200" value="10" />
+        </div>
+        <div>
+            <label for="conditionFilter">Condition Filter</label>
+            <select id="conditionFilter">
+                <option value="ALL">ALL</option>
+                <option value="A">A</option>
+                <option value="B">B</option>
+                <option value="C">C</option>
+                <option value="D">D</option>
+                <option value="PSA10">PSA10</option>
+                <option value="PSA9">PSA9</option>
+                <option value="PSA8_OR_UNDER">PSA8-</option>
+                <option value="ARS10">ARS10</option>
+            </select>
+        </div>
+    </div>
+    <div class="actions">
+        <button id="runFullBtn" onclick="runFullTest()">Run Full Test</button>
+        <button class="secondary" id="cardsBtn" onclick="runCardsOnly()">Cards Only</button>
+    </div>
+    <div id="status" class="status">Ready</div>
+</div>
+
+<div class="panel">
+    <div class="summary-grid">
+        <div class="summary-item"><div class="k">Keyword</div><div class="v" id="sumKeyword">-</div></div>
+        <div class="summary-item"><div class="k">Matched Cards</div><div class="v" id="sumCards">0</div></div>
+        <div class="summary-item"><div class="k">Selected Cards</div><div class="v" id="sumCardsSelected">0</div></div>
+        <div class="summary-item"><div class="k">Total Listings</div><div class="v" id="sumListingsTotal">0</div></div>
+        <div class="summary-item"><div class="k">Filtered Listings</div><div class="v" id="sumListingsFiltered">0</div></div>
+        <div class="summary-item"><div class="k">Cheapest (Filtered)</div><div class="v" id="sumCheapest">-</div></div>
+    </div>
+</div>
+
+<div class="panel">
+    <h2 class="section-title">Keyword Card List (Selectable)</h2>
+    <div class="picker-info" id="selectedInfo">Selected 0 / 0 cards</div>
+    <div id="cardsGrid" class="thumb-grid">
+        <div class="empty">No data</div>
+    </div>
+</div>
+
+<div class="panel">
+    <h2 class="section-title">Merged On-Sale Listings (Price ASC)</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Card Name</th>
+                    <th>Card ID</th>
+                    <th>Price</th>
+                    <th>Condition</th>
+                    <th>Listing UID</th>
+                    <th>Raw Price</th>
+                </tr>
+            </thead>
+            <tbody id="listingsBody">
+                <tr><td colspan="7" class="empty">No data</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const BASE_FILTER_OPTIONS = [
+    { value: "ALL", label: "ALL" },
+    { value: "A", label: "A" },
+    { value: "B", label: "B" },
+    { value: "C", label: "C" },
+    { value: "D", label: "D" },
+    { value: "PSA10", label: "PSA10" },
+    { value: "PSA9", label: "PSA9" },
+    { value: "PSA8_OR_UNDER", label: "PSA8-" },
+    { value: "ARS10", label: "ARS10" }
+];
+const BASE_FILTER_SET = new Set(BASE_FILTER_OPTIONS.map(opt => opt.value));
+
+let lastKeyword = "";
+let cardResults = [];
+let selectedCardId = "";
+let rawMergedListings = [];
+let listingRequestSeq = 0;
+
+function esc(v) {
+    return String(v ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
+function fmtUsd(v) {
+    if (v == null || !Number.isFinite(Number(v))) return "-";
+    return `$${Number(v).toLocaleString()}`;
+}
+
+function setStatus(text, type = "") {
+    const el = $("status");
+    el.textContent = text;
+    el.className = `status ${type}`.trim();
+}
+
+function setBusy(busy) {
+    $("runFullBtn").disabled = busy;
+    $("cardsBtn").disabled = busy;
+}
+
+function getCardId(card) {
+    return String(card?.card_id || "");
+}
+
+function getSelectedCards() {
+    if (!selectedCardId) return [];
+    const selected = cardResults.find(card => getCardId(card) === selectedCardId);
+    return selected ? [selected] : [];
+}
+
+function updateSelectedInfo() {
+    $("selectedInfo").textContent = `Selected ${selectedCardId ? 1 : 0} / ${cardResults.length} cards`;
+}
+
+function normalizeCondition(rawCondition) {
+    const raw = String(rawCondition || "").trim();
+    if (!raw) return "";
+
+    const compact = raw.toUpperCase().replace(/[\s_-]+/g, "");
+    if (compact === "A" || compact === "B" || compact === "C" || compact === "D") return compact;
+    if (compact === "PSA10") return "PSA10";
+    if (compact === "PSA9") return "PSA9";
+    if (compact === "ARS10") return "ARS10";
+    if (compact === "PSA8ORUNDER" || compact === "PSA8-" || compact === "PSA8UNDER") return "PSA8_OR_UNDER";
+
+    const psaMatch = compact.match(/^PSA(\d+)$/);
+    if (psaMatch) {
+        const grade = Number(psaMatch[1]);
+        if (Number.isFinite(grade) && grade <= 8) return "PSA8_OR_UNDER";
+        return `PSA${grade}`;
+    }
+
+    return compact;
+}
+
+function matchesCondition(rawCondition, selectedFilter) {
+    if (selectedFilter === "ALL") return true;
+    const normalized = normalizeCondition(rawCondition);
+    if (!normalized) return false;
+    if (selectedFilter === "PSA8_OR_UNDER") return normalized === "PSA8_OR_UNDER";
+    return normalized === selectedFilter;
+}
+
+function rebuildConditionFilterOptions(listings) {
+    const select = $("conditionFilter");
+    const previous = select.value || "ALL";
+
+    const options = [...BASE_FILTER_OPTIONS];
+    const dynamic = new Map();
+    (listings || []).forEach(item => {
+        const normalized = normalizeCondition(item.condition);
+        if (!normalized || BASE_FILTER_SET.has(normalized) || dynamic.has(normalized)) return;
+        dynamic.set(normalized, normalized);
+    });
+
+    Array.from(dynamic.entries())
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([value, label]) => {
+            options.push({ value, label });
+        });
+
+    select.innerHTML = options
+        .map(opt => `<option value="${esc(opt.value)}">${esc(opt.label)}</option>`)
+        .join("");
+
+    const values = new Set(options.map(opt => opt.value));
+    select.value = values.has(previous) ? previous : "ALL";
+}
+
+function getConfig() {
+    const base = $("apiBase").value.trim().replace(/\/+$/, "");
+    return {
+        base,
+        keyword: $("keyword").value.trim(),
+        cardLimit: Math.max(1, Math.min(50, Number($("cardLimit").value || 20))),
+        perPage: Math.max(1, Math.min(50, Number($("perPage").value || 20))),
+        maxPages: Math.max(1, Math.min(200, Number($("maxPages").value || 10)))
+    };
+}
+
+async function requestJson(url) {
+    const res = await fetch(url);
+    const text = await res.text();
+    let data;
+    try {
+        data = JSON.parse(text);
+    } catch {
+        throw new Error(`Non-JSON response (${res.status}): ${text.slice(0, 200)}`);
+    }
+    if (!res.ok) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    return data;
+}
+
+async function searchCardsByKeyword(base, keyword, limit) {
+    const liveSearchUrl = `${base}/api/snkrdunk/live-search?q=${encodeURIComponent(keyword)}&limit=${limit}&page=1`;
+    try {
+        const liveRes = await requestJson(liveSearchUrl);
+        if (liveRes.success && Array.isArray(liveRes.data)) {
+            return liveRes.data.slice(0, limit);
+        }
+    } catch (liveError) {
+        console.warn('[Local Test] live-search failed, fallback to /api/snkrdunk/cards:', liveError.message);
+    }
+
+    const cardsRes = await requestJson(
+        `${base}/api/snkrdunk/cards?q=${encodeURIComponent(keyword)}&limit=${limit}`
+    );
+    return Array.isArray(cardsRes.data) ? cardsRes.data.slice(0, limit) : [];
+}
+
+function renderCardSelectionGrid(cards) {
+    const grid = $("cardsGrid");
+    if (!cards.length) {
+        grid.innerHTML = '<div class="empty">No matched cards</div>';
+        updateSelectedInfo();
+        return;
+    }
+
+    grid.innerHTML = cards.map(card => {
+        const cardId = getCardId(card);
+        const cardName = card.name || card.card_name || card.full_title || cardId;
+        const imageUrl = card.image_url || card.thumbnail_url || "";
+        const selected = selectedCardId === cardId;
+        const encodedId = encodeURIComponent(cardId);
+
+        return `
+            <button type="button" class="thumb-card ${selected ? "selected" : ""}" onclick="toggleCardSelection('${encodedId}')">
+                <div class="thumb-img-wrap">
+                    ${imageUrl
+                        ? `<img class="thumb-img" src="${esc(imageUrl)}" alt="${esc(cardName)}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                        : ''
+                    }
+                    <div class="thumb-fallback" style="${imageUrl ? 'display:none;' : 'display:flex;'}">No Image</div>
+                </div>
+                <div class="thumb-body">
+                    <div class="thumb-name">${esc(cardName)}</div>
+                    <div class="thumb-meta mono">ID ${esc(cardId)}</div>
+                    <div class="thumb-meta">Sold ${Number(card.sold_count || 0).toLocaleString()} | Active ${Number(card.active_count || 0).toLocaleString()}</div>
+                    <div class="thumb-meta">Cheapest ${fmtUsd(card.cheapest_listing)}</div>
+                </div>
+            </button>
+        `;
+    }).join("");
+    updateSelectedInfo();
+}
+
+async function toggleCardSelection(encodedCardId) {
+    const cardId = decodeURIComponent(String(encodedCardId || ""));
+    if (!cardId) return;
+    if (selectedCardId === cardId) {
+        return;
+    }
+    selectedCardId = cardId;
+    renderCardSelectionGrid(cardResults);
+    await loadSelectedCardListings();
+}
+
+function selectSingleCard(cards, preferredCardId = "") {
+    const preferred = String(preferredCardId || "");
+    if (!Array.isArray(cards) || !cards.length) {
+        selectedCardId = "";
+        return;
+    }
+    if (preferred && cards.some(card => getCardId(card) === preferred)) {
+        selectedCardId = preferred;
+        return;
+    }
+    selectedCardId = getCardId(cards[0]);
+}
+
+function renderListings(listings) {
+    const body = $("listingsBody");
+    if (!listings.length) {
+        body.innerHTML = '<tr><td colspan="7" class="empty">No on-sale listings</td></tr>';
+        return;
+    }
+    body.innerHTML = listings.map((item, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td>${esc(item.cardName || "-")}</td>
+            <td class="mono">${esc(item.cardId || "-")}</td>
+            <td class="price">${fmtUsd(item.priceUsd)}</td>
+            <td>${esc(item.condition || "-")}</td>
+            <td class="mono">${esc(item.listingUID || "-")}</td>
+            <td class="muted">${esc(item.price || "-")}</td>
+        </tr>
+    `).join("");
+}
+
+function updateSummary(keyword, cardCount, selectedCount, filteredListings, totalListings) {
+    $("sumKeyword").textContent = keyword || "-";
+    $("sumCards").textContent = Number(cardCount || 0).toLocaleString();
+    $("sumCardsSelected").textContent = Number(selectedCount || 0).toLocaleString();
+    $("sumListingsTotal").textContent = Number(totalListings || 0).toLocaleString();
+    $("sumListingsFiltered").textContent = Number(filteredListings.length || 0).toLocaleString();
+    const cheapest = filteredListings.length ? filteredListings[0].priceUsd : null;
+    $("sumCheapest").textContent = fmtUsd(cheapest);
+}
+
+function applyConditionFilterAndRender() {
+    const selectedFilter = $("conditionFilter").value || "ALL";
+    const filtered = rawMergedListings.filter(item => matchesCondition(item.condition, selectedFilter));
+    renderListings(filtered);
+    updateSummary(lastKeyword, cardResults.length, selectedCardId ? 1 : 0, filtered, rawMergedListings.length);
+
+    if (!rawMergedListings.length) return;
+    setStatus(
+        `Filter ${selectedFilter}: ${filtered.length}/${rawMergedListings.length} listings`,
+        "ok"
+    );
+}
+
+async function loadSelectedCardListings() {
+    const cfg = getConfig();
+    const selectedCards = getSelectedCards();
+    if (!selectedCards.length) {
+        rawMergedListings = [];
+        rebuildConditionFilterOptions([]);
+        renderListings([]);
+        updateSummary(lastKeyword, cardResults.length, 0, [], 0);
+        setStatus("Select one card first.", "error");
+        return;
+    }
+
+    const selectedCard = selectedCards[0];
+    const cardName = selectedCard.name || selectedCard.card_name || selectedCard.full_title || selectedCard.card_id;
+    const requestSeq = ++listingRequestSeq;
+
+    setStatus(`Loading on-sale listings for "${cardName}"...`, "");
+    try {
+        const onSaleRes = await requestJson(
+            `${cfg.base}/api/snkrdunk/on-sale/${encodeURIComponent(selectedCard.card_id)}?perPage=${cfg.perPage}&maxPages=${cfg.maxPages}`
+        );
+        if (requestSeq !== listingRequestSeq) return;
+
+        const items = Array.isArray(onSaleRes.data) ? onSaleRes.data : [];
+        rawMergedListings = items
+            .map(item => ({
+                ...item,
+                cardId: String(selectedCard.card_id),
+                cardName
+            }))
+            .sort((a, b) => {
+                if (a.priceUsd == null && b.priceUsd == null) return 0;
+                if (a.priceUsd == null) return 1;
+                if (b.priceUsd == null) return -1;
+                return Number(a.priceUsd) - Number(b.priceUsd);
+            });
+
+        rebuildConditionFilterOptions(rawMergedListings);
+        applyConditionFilterAndRender();
+        setStatus(`Done: selected 1 card, ${rawMergedListings.length} listings.`, "ok");
+    } catch (err) {
+        if (requestSeq !== listingRequestSeq) return;
+        rawMergedListings = [];
+        rebuildConditionFilterOptions([]);
+        renderListings([]);
+        updateSummary(lastKeyword, cardResults.length, 1, [], 0);
+        setStatus(`Listings load failed: ${err.message}`, "error");
+    }
+}
+
+async function runCardsOnly() {
+    const cfg = getConfig();
+    if (!cfg.keyword) {
+        setStatus("Enter a keyword.", "error");
+        return;
+    }
+    setBusy(true);
+    setStatus("Loading cards...", "");
+    try {
+        const cards = await searchCardsByKeyword(cfg.base, cfg.keyword, cfg.cardLimit);
+        lastKeyword = cfg.keyword;
+        cardResults = cards;
+        selectSingleCard(cards);
+        rawMergedListings = [];
+        rebuildConditionFilterOptions([]);
+        renderCardSelectionGrid(cards);
+        renderListings([]);
+        updateSummary(cfg.keyword, cards.length, selectedCardId ? 1 : 0, [], 0);
+        setStatus(`Cards loaded: ${cards.length}`, "ok");
+    } catch (err) {
+        lastKeyword = cfg.keyword;
+        cardResults = [];
+        selectedCardId = "";
+        rawMergedListings = [];
+        rebuildConditionFilterOptions([]);
+        renderCardSelectionGrid([]);
+        renderListings([]);
+        updateSummary(cfg.keyword, 0, 0, [], 0);
+        setStatus(`Cards load failed: ${err.message}`, "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+async function runFullTest() {
+    const cfg = getConfig();
+    if (!cfg.keyword) {
+        setStatus("Enter a keyword.", "error");
+        return;
+    }
+
+    setBusy(true);
+    setStatus("Loading cards...", "");
+    try {
+        const cards = await searchCardsByKeyword(cfg.base, cfg.keyword, cfg.cardLimit);
+        const previousKeyword = lastKeyword;
+        const prevSelectedId = selectedCardId;
+        lastKeyword = cfg.keyword;
+        cardResults = cards;
+        if (previousKeyword === cfg.keyword && prevSelectedId) {
+            selectSingleCard(cards, prevSelectedId);
+        } else {
+            selectSingleCard(cards);
+        }
+        renderCardSelectionGrid(cards);
+
+        if (!cards.length) {
+            selectedCardId = "";
+            rawMergedListings = [];
+            rebuildConditionFilterOptions([]);
+            renderListings([]);
+            updateSummary(cfg.keyword, 0, 0, [], 0);
+            setStatus("No matched cards.", "error");
+            return;
+        }
+
+        if (!selectedCardId) {
+            rawMergedListings = [];
+            rebuildConditionFilterOptions([]);
+            renderListings([]);
+            updateSummary(cfg.keyword, cards.length, 0, [], 0);
+            setStatus('No selectable card found.', 'error');
+            return;
+        }
+
+        setStatus(`Matched ${cards.length} cards. Loading selected card listings...`, "");
+        await loadSelectedCardListings();
+    } catch (err) {
+        rawMergedListings = [];
+        rebuildConditionFilterOptions([]);
+        renderListings([]);
+        updateSummary(cfg.keyword, cardResults.length, selectedCardId ? 1 : 0, [], 0);
+        setStatus(`Full test failed: ${err.message}`, "error");
+    } finally {
+        setBusy(false);
+    }
+}
+
+$("keyword").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runFullTest();
+});
+$("conditionFilter").addEventListener("change", () => {
+    applyConditionFilterAndRender();
+});
+</script>
+</body>
+</html>

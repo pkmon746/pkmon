@@ -6,6 +6,16 @@ class AgentSystem {
         this.psaToken = 'C2MNdaW2IO9Xlbm1MXC0Q_ARCaVfQbkldZRsMYd6oWP8ZACXog6jzv6X7QrgyWwYRgNmU3fn5tKp99zf8lRHiugZiEsjnOl4t_EpApf7JixN7HXvzwkGUZ8jxfpYNqszBBUZsOHS0mRatl3h-KxNvyd0qHV-QuDyryiiEFMq50tdWIiqrLEdil0xGi478LrtrLfnB9kP10jBpk6_dWV_UjI6jRF9_gRwQy3meG9Bitgvpghg-1DImavKxNW_i6ojZYrCIY5DK3w3uMkniqr8DNunZxZu-2c25o7dymeXq8DqU_Wh';
         this.psaApiUrl = 'https://api.psacard.com/publicapi';
         this.priceChartingCsvUrl = 'https://www.pricecharting.com/price-guide/download-custom?t=e8b39b271ff62d9572736d3a6e8e8050edb53704&category=pokemon-cards';
+        this.proxyBaseUrl = 'https://pkmon-1.onrender.com';
+        this.snkrdunkKeywordSearchLimit = 12;
+        this.snkrdunkKeywordCardLimit = 3;
+        this.snkrdunkOnSalePerPage = 20;
+        this.snkrdunkOnSaleMaxPages = 20;
+        this.keywordSelection = {
+            keyword: '',
+            cards: [],
+            selectedCardId: ''
+        };
 
         this.currentData = {
             sylveon: null,
@@ -30,13 +40,24 @@ class AgentSystem {
         this.dragoniteAgent();
     }
 
-    async startAnalysis(certNumber) {
-        if (!certNumber) {
+    async startAnalysis(inputValue) {
+        const query = String(inputValue || '').trim();
+        if (!query) {
             this.showPikachuReaction('error');
-            alert('Please enter a valid CERT number');
+            alert('Please enter a valid CERT number or keyword');
             return;
         }
 
+        if (/^\d+$/.test(query)) {
+            await this.startCertAnalysis(query);
+            return;
+        }
+
+        await this.prepareKeywordCardSelection(query);
+    }
+
+    async startCertAnalysis(certNumber) {
+        this.hideKeywordCardPicker();
         this.updateStatus('Analyzing...');
         this.showPikachuReaction('start');
         this.addChatMessage('System', 'Starting arbitrage analysis...', 25);
@@ -53,6 +74,275 @@ class AgentSystem {
 
             this.showArbitrageResults();
         }
+    }
+
+    async prepareKeywordCardSelection(keyword) {
+        const normalizedKeyword = String(keyword || '').trim();
+        if (!normalizedKeyword) {
+            this.showPikachuReaction('error');
+            alert('Please enter a valid keyword');
+            return;
+        }
+
+        this.updateStatus('Searching cards by keyword...');
+        this.showPikachuReaction('analyzing');
+        this.addChatMessage('System', `Searching SNKRDUNK cards for "${normalizedKeyword}"...`, 25);
+
+        try {
+            const matchedCards = await this.searchSnkrdunkCardsByKeyword(normalizedKeyword, this.snkrdunkKeywordSearchLimit);
+            if (!matchedCards.length) {
+                this.hideKeywordCardPicker();
+                const gengarCardBody = document.getElementById('gengarData');
+                if (gengarCardBody) {
+                    gengarCardBody.innerHTML = `
+                        <div class="data-item">
+                            <div class="data-label">Keyword Results</div>
+                            <div class="data-value" style="font-size:0.82rem;color:#EF4444;">
+                                No matching Pokemon cards found for "${this.escapeHtml(normalizedKeyword)}"
+                            </div>
+                        </div>
+                    `;
+                }
+                this.showPikachuReaction('error');
+                this.updateStatus('No matching cards');
+                this.addChatMessage('Gengar', `No matching Pokemon cards found for "${normalizedKeyword}"`, 94);
+                return;
+            }
+
+            this.keywordSelection.keyword = normalizedKeyword;
+            this.keywordSelection.cards = matchedCards;
+            this.keywordSelection.selectedCardId = matchedCards[0]?.card_id ? String(matchedCards[0].card_id) : '';
+
+            this.renderKeywordCardPicker();
+            this.updateStatus('Select one card and click Analyze Selected');
+            this.addChatMessage(
+                'Gengar',
+                `Found ${matchedCards.length} cards for "${normalizedKeyword}". Select one and run analysis.`,
+                94
+            );
+        } catch (error) {
+            console.error('[Keyword Selection] Error:', error);
+            this.hideKeywordCardPicker();
+            const gengarCardBody = document.getElementById('gengarData');
+            if (gengarCardBody) {
+                gengarCardBody.innerHTML = `
+                    <div class="data-item">
+                        <div class="data-label">Keyword Results</div>
+                        <div class="data-value" style="font-size:0.82rem;color:#EF4444;">
+                            Failed to load keyword cards: ${this.escapeHtml(error.message || 'Unknown error')}
+                        </div>
+                    </div>
+                `;
+            }
+            this.showPikachuReaction('error');
+            this.updateStatus('Keyword search failed');
+            this.addChatMessage('Gengar', `⚠️ Keyword card search failed (${error.message || 'Unknown error'})`, 94);
+        }
+    }
+
+    async startKeywordListingAnalysis(keyword, selectedCards = null) {
+        const normalizedKeyword = String(keyword || '').trim();
+        if (!normalizedKeyword) {
+            this.showPikachuReaction('error');
+            alert('Please enter a valid keyword');
+            return;
+        }
+
+        const selectedCardCount = Array.isArray(selectedCards) ? selectedCards.length : 0;
+        this.updateStatus('Searching keyword listings...');
+        this.showPikachuReaction('analyzing');
+        this.addChatMessage(
+            'System',
+            selectedCardCount > 0
+                ? `Searching SNKRDUNK listings for "${normalizedKeyword}" (${selectedCardCount} selected cards)...`
+                : `Searching SNKRDUNK listings for "${normalizedKeyword}"...`,
+            25
+        );
+
+        const baseData = {
+            latestSalePrice: 0,
+            cheapestListing: 0,
+            arbitrageOpportunity: 0,
+            profitMargin: '0.00',
+            listingsFound: 0,
+            dataSource: 'SNKRDUNK (Keyword Search)'
+        };
+
+        this.currentData.gengar = await this.enrichGengarWithOnSaleListings(
+            baseData,
+            normalizedKeyword,
+            Array.isArray(selectedCards) ? selectedCards : null
+        );
+
+        const pricedListings = (this.currentData.gengar.onSaleListings || [])
+            .filter(item => item && item.priceUsd != null && Number.isFinite(Number(item.priceUsd)));
+        if (pricedListings.length) {
+            const lowest = Number(pricedListings[0].priceUsd);
+            this.currentData.gengar.cheapestListing = lowest;
+            this.currentData.gengar.latestSalePrice = lowest;
+            this.currentData.gengar.listingsFound = this.currentData.gengar.onSaleListingsTotal;
+        }
+
+        this.updateGengarCard(this.currentData.gengar);
+        this.showKeywordListingResults();
+
+        if (this.currentData.gengar.onSaleListingsError) {
+            this.showPikachuReaction('error');
+            this.updateStatus('Keyword listings failed');
+            this.addChatMessage(
+                'Gengar',
+                `⚠️ Keyword listings failed (${this.currentData.gengar.onSaleListingsError})`,
+                94
+            );
+            return;
+        }
+
+        if (this.currentData.gengar.onSaleListingsTotal > 0) {
+            this.showPikachuReaction('profit');
+        } else {
+            this.showPikachuReaction('loss');
+        }
+
+        this.updateStatus('Keyword listings loaded');
+        this.addChatMessage(
+            'Gengar',
+            `Loaded ${this.currentData.gengar.onSaleListingsTotal} unsold listings for "${this.currentData.gengar.onSaleKeyword}" (${this.currentData.gengar.onSaleMatchedCards.length} cards)`,
+            94
+        );
+    }
+
+    hideKeywordCardPicker() {
+        const section = document.getElementById('keywordPickerSection');
+        const grid = document.getElementById('keywordPickerGrid');
+        const meta = document.getElementById('keywordPickerMeta');
+        if (section) section.style.display = 'none';
+        if (grid) grid.innerHTML = '';
+        if (meta) meta.textContent = '';
+    }
+
+    renderKeywordCardPicker() {
+        const section = document.getElementById('keywordPickerSection');
+        const grid = document.getElementById('keywordPickerGrid');
+        const meta = document.getElementById('keywordPickerMeta');
+        const gengarCardBody = document.getElementById('gengarData');
+        const cards = Array.isArray(this.keywordSelection.cards) ? this.keywordSelection.cards : [];
+        const selectedId = String(this.keywordSelection.selectedCardId || '');
+        const selectedCount = selectedId ? 1 : 0;
+
+        if (!cards.length) {
+            this.hideKeywordCardPicker();
+            return;
+        }
+
+        // Keyword 선택 UI는 Gengar(Arbitrage Hunter) 카드 내에 표시
+        if (section) section.style.display = 'none';
+        if (meta) meta.textContent = `Keyword "${this.keywordSelection.keyword}" | Selected ${selectedCount} / ${cards.length}`;
+
+        const rowsHtml = cards.map(card => {
+            const cardId = String(card.card_id || '');
+            const encodedCardId = encodeURIComponent(cardId);
+            const selected = selectedId === cardId;
+            const imageUrl = card.image_url || card.thumbnail_url || '';
+            const cardName = card.name || card.card_name || card.full_title || cardId;
+            const soldCount = Number(card.sold_count || 0).toLocaleString();
+            const activeCount = Number(card.active_count || 0).toLocaleString();
+            const cheapest = card.cheapest_listing != null && Number.isFinite(Number(card.cheapest_listing))
+                ? `$${Number(card.cheapest_listing).toLocaleString()}`
+                : '-';
+
+            return `
+                <button type="button"
+                    onclick="toggleKeywordCardSelection('${encodedCardId}')"
+                    style="
+                        width:100%;
+                        border:1px solid ${selected ? 'var(--secondary-purple)' : 'var(--glass-border)'};
+                        border-radius:10px;
+                        background:${selected ? 'rgba(167,139,250,0.14)' : 'rgba(255,255,255,0.03)'};
+                        color:var(--text-primary);
+                        text-align:left;
+                        display:flex;
+                        align-items:center;
+                        gap:10px;
+                        padding:8px;
+                        cursor:pointer;
+                    ">
+                    <div style="width:56px; min-width:56px; height:78px; border-radius:8px; overflow:hidden; border:1px solid var(--glass-border); background:rgba(255,255,255,0.06);">
+                        ${imageUrl
+                            ? `<img src="${this.escapeHtml(imageUrl)}" alt="${this.escapeHtml(cardName)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`
+                            : ''
+                        }
+                        <div style="width:100%;height:100%;display:${imageUrl ? 'none' : 'flex'};align-items:center;justify-content:center;color:var(--text-muted);font-size:0.68rem;">No Image</div>
+                    </div>
+                    <div style="min-width:0;flex:1;">
+                        <div style="font-size:0.8rem;font-weight:600;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+                            ${this.escapeHtml(cardName)}
+                        </div>
+                        <div style="margin-top:2px;font-size:0.7rem;color:var(--text-muted);font-family:monospace;">ID ${this.escapeHtml(cardId)}</div>
+                    </div>
+                    <div style="font-size:0.7rem;color:${selected ? 'var(--secondary-purple)' : 'var(--text-muted)'};font-weight:600;min-width:52px;text-align:right;">
+                        ${selected ? 'Selected' : 'Select'}
+                    </div>
+                </button>
+            `;
+        }).join('');
+
+        const selectionHtml = `
+            <div class="data-item">
+                <div class="data-label">Keyword Results</div>
+                <div class="data-value" style="font-size:0.82rem;color:var(--text-secondary);">
+                    "${this.escapeHtml(this.keywordSelection.keyword)}" | Selected ${selectedCount} / ${cards.length}
+                </div>
+                <div style="margin-top:0.55rem; display:flex; gap:8px; flex-wrap:wrap;">
+                    <button type="button" class="btn-primary" onclick="startSelectedKeywordAnalysis()">
+                        <i class="fas fa-play"></i> Analyze Selected
+                    </button>
+                </div>
+                <div style="margin-top:0.7rem; display:grid; gap:8px; max-height:300px; overflow-y:auto;">
+                    ${rowsHtml}
+                </div>
+            </div>
+        `;
+
+        if (gengarCardBody) {
+            gengarCardBody.innerHTML = selectionHtml;
+        }
+        if (grid) {
+            grid.innerHTML = rowsHtml;
+        }
+    }
+
+    toggleKeywordCardSelection(cardId) {
+        const id = String(cardId || '').trim();
+        if (!id) return;
+        const cards = Array.isArray(this.keywordSelection.cards) ? this.keywordSelection.cards : [];
+        if (!cards.some(card => String(card.card_id) === id)) {
+            return;
+        }
+        this.keywordSelection.selectedCardId = id;
+        this.renderKeywordCardPicker();
+    }
+
+    getSelectedKeywordCards() {
+        const cards = Array.isArray(this.keywordSelection.cards) ? this.keywordSelection.cards : [];
+        const selectedId = String(this.keywordSelection.selectedCardId || '');
+        if (!selectedId) return [];
+        const selectedCard = cards.find(card => String(card.card_id) === selectedId);
+        return selectedCard ? [selectedCard] : [];
+    }
+
+    async runSelectedKeywordAnalysis() {
+        const keyword = this.keywordSelection.keyword || '';
+        const selectedCards = this.getSelectedKeywordCards();
+        if (!keyword) {
+            alert('Please search keyword first');
+            return;
+        }
+        if (!selectedCards.length) {
+            alert('Please select at least one card');
+            return;
+        }
+
+        await this.startKeywordListingAnalysis(keyword, selectedCards);
     }
 
     // Sylveon: PSA API Integration via Proxy Server
@@ -351,6 +641,8 @@ class AgentSystem {
 
         const fmv = this.currentData.charizard.fmv;
         const cardInfo = this.currentData.sylveon;
+        const cardNameRaw = cardInfo ? cardInfo.cardName : 'Gengar';
+        const cardName = cardNameRaw.split('#')[0].trim();
 
         try {
             // Call SNKRDUNK ID scraper API
@@ -359,8 +651,6 @@ class AgentSystem {
 
             // Search by name for dynamic lookup
             // Clean name: remove # and anything after it (e.g. "Dark Gengar #94" -> "Dark Gengar")
-            let cardNameRaw = cardInfo ? cardInfo.cardName : 'Gengar';
-            const cardName = cardNameRaw.split('#')[0].trim();
             // For now, we rely heavily on the name search which our backend handles well
 
             const searchParams = new URLSearchParams({
@@ -369,7 +659,7 @@ class AgentSystem {
                 // number: cardInfo.collectionNumber || ''
             });
 
-            const response = await fetch(`https://pkmon-1.onrender.com/api/snkrdunk/search?${searchParams}`);
+            const response = await fetch(`${this.proxyBaseUrl}/api/snkrdunk/search?${searchParams}`);
 
             if (!response.ok) {
                 throw new Error(`SNKRDUNK API returned ${response.status}`);
@@ -385,16 +675,25 @@ class AgentSystem {
             // Use the new response format
             const snkrPrice = result.latestPrice || fmv * 0.75; // Latest PSA 10 price in USD
 
-            this.currentData.gengar = {
+            this.currentData.gengar = await this.enrichGengarWithOnSaleListings({
                 latestSalePrice: snkrPrice,
                 cheapestListing: snkrPrice,
                 arbitrageOpportunity: fmv - snkrPrice,
                 profitMargin: ((fmv - snkrPrice) / snkrPrice * 100).toFixed(2),
                 listingsFound: result.psa10Listings || 0,
                 dataSource: `SNKRDUNK (${result.cardTitle || 'Real-time'})`
-            };
+            }, cardName);
 
             this.updateGengarCard(this.currentData.gengar);
+            if (this.currentData.gengar.onSaleListingsError) {
+                this.addChatMessage('Gengar',
+                    `⚠️ On-sale listings load failed (${this.currentData.gengar.onSaleListingsError})`,
+                    94);
+            } else {
+                this.addChatMessage('Gengar',
+                    `Loaded ${this.currentData.gengar.onSaleListingsTotal} unsold listings for "${this.currentData.gengar.onSaleKeyword}" (${this.currentData.gengar.onSaleMatchedCards.length} cards)`,
+                    94);
+            }
 
             if (this.currentData.gengar.arbitrageOpportunity > 0) {
                 this.showPikachuReaction('profit');
@@ -416,15 +715,24 @@ class AgentSystem {
 
             const snkrPrice = fmv * 0.75; // Assume 25% cheaper
 
-            this.currentData.gengar = {
+            this.currentData.gengar = await this.enrichGengarWithOnSaleListings({
                 latestSalePrice: snkrPrice - 100,
                 cheapestListing: snkrPrice,
                 arbitrageOpportunity: fmv - snkrPrice,
                 profitMargin: ((fmv - snkrPrice) / snkrPrice * 100).toFixed(2),
                 dataSource: 'Estimated (Scraper offline)'
-            };
+            }, cardName);
 
             this.updateGengarCard(this.currentData.gengar);
+            if (this.currentData.gengar.onSaleListingsError) {
+                this.addChatMessage('Gengar',
+                    `⚠️ On-sale listings load failed (${this.currentData.gengar.onSaleListingsError})`,
+                    94);
+            } else {
+                this.addChatMessage('Gengar',
+                    `Loaded ${this.currentData.gengar.onSaleListingsTotal} unsold listings for "${this.currentData.gengar.onSaleKeyword}" (${this.currentData.gengar.onSaleMatchedCards.length} cards)`,
+                    94);
+            }
 
             if (this.currentData.gengar.arbitrageOpportunity > 0) {
                 this.showPikachuReaction('profit');
@@ -435,6 +743,151 @@ class AgentSystem {
                 this.showPikachuReaction('loss');
             }
         }
+    }
+
+    getApiBaseCandidates() {
+        const bases = [];
+        const origin = typeof window !== 'undefined' ? window.location?.origin : null;
+        if (origin && /^https?:\/\//.test(origin)) {
+            bases.push(origin);
+        }
+        if (this.proxyBaseUrl && !bases.includes(this.proxyBaseUrl)) {
+            bases.push(this.proxyBaseUrl);
+        }
+        return bases;
+    }
+
+    async fetchJsonWithFallback(path) {
+        const bases = this.getApiBaseCandidates();
+        let lastError = null;
+
+        for (const base of bases) {
+            try {
+                const response = await fetch(`${base}${path}`, {
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`${base}${path} -> ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                lastError = error;
+            }
+        }
+
+        throw lastError || new Error('No available API base');
+    }
+
+    async searchSnkrdunkCardsByKeyword(keyword, limit = this.snkrdunkKeywordCardLimit) {
+        const q = String(keyword || '').trim();
+        if (!q) return [];
+        const safeLimit = Math.max(1, Math.min(50, Number(limit || this.snkrdunkKeywordCardLimit)));
+
+        try {
+            const liveResult = await this.fetchJsonWithFallback(
+                `/api/snkrdunk/live-search?q=${encodeURIComponent(q)}&limit=${safeLimit}&page=1`
+            );
+            if (liveResult.success) {
+                const liveCards = Array.isArray(liveResult.data) ? liveResult.data : [];
+                return liveCards.filter(card => card && card.card_id);
+            }
+        } catch (liveError) {
+            console.warn('[SNKRDUNK Keyword] live-search unavailable, fallback to /cards:', liveError);
+        }
+
+        const result = await this.fetchJsonWithFallback(
+            `/api/snkrdunk/cards?q=${encodeURIComponent(q)}&limit=${safeLimit}`
+        );
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to search cards by keyword');
+        }
+        const cards = Array.isArray(result.data) ? result.data : [];
+        return cards.filter(card => card && card.card_id);
+    }
+
+    async fetchSnkrdunkOnSaleListings(cardId, options = {}) {
+        const perPage = options.perPage || this.snkrdunkOnSalePerPage;
+        const maxPages = options.maxPages || this.snkrdunkOnSaleMaxPages;
+        const result = await this.fetchJsonWithFallback(
+            `/api/snkrdunk/on-sale/${encodeURIComponent(cardId)}?perPage=${perPage}&maxPages=${maxPages}`
+        );
+        if (!result.success) {
+            throw new Error(result.error || 'Failed to load on-sale listings');
+        }
+
+        return result;
+    }
+
+    async enrichGengarWithOnSaleListings(baseData, keyword, selectedCards = null) {
+        const normalizedKeyword = String(keyword || '').trim();
+        const enrichedData = {
+            ...baseData,
+            onSaleKeyword: normalizedKeyword,
+            onSaleMatchedCards: [],
+            onSaleCardIds: [],
+            onSaleListings: [],
+            onSaleListingsTotal: 0,
+            onSaleListingsError: null
+        };
+
+        try {
+            const hasSelectedCards = Array.isArray(selectedCards) && selectedCards.length > 0;
+            const matchedCards = hasSelectedCards
+                ? selectedCards.filter(card => card && card.card_id)
+                : await this.searchSnkrdunkCardsByKeyword(normalizedKeyword);
+            if (!matchedCards.length) {
+                enrichedData.onSaleListingsError = `No matching Pokemon cards found for "${normalizedKeyword}"`;
+                return enrichedData;
+            }
+
+            const targetCards = hasSelectedCards
+                ? matchedCards
+                : matchedCards.slice(0, this.snkrdunkKeywordCardLimit);
+            enrichedData.onSaleMatchedCards = targetCards;
+            enrichedData.onSaleCardIds = targetCards.map(card => String(card.card_id));
+
+            const listingResponses = await Promise.all(
+                targetCards.map(card =>
+                    this.fetchSnkrdunkOnSaleListings(card.card_id, {
+                        perPage: this.snkrdunkOnSalePerPage,
+                        maxPages: this.snkrdunkOnSaleMaxPages
+                    })
+                )
+            );
+
+            const mergedListings = [];
+            listingResponses.forEach((result, index) => {
+                const card = targetCards[index];
+                const cardName = card.name || card.card_name || card.full_title || card.card_id;
+                const items = Array.isArray(result.data) ? result.data : [];
+                items.forEach(item => {
+                    mergedListings.push({
+                        ...item,
+                        cardId: String(card.card_id),
+                        cardName
+                    });
+                });
+            });
+
+            mergedListings.sort((a, b) => {
+                if (a.priceUsd == null && b.priceUsd == null) return 0;
+                if (a.priceUsd == null) return 1;
+                if (b.priceUsd == null) return -1;
+                return Number(a.priceUsd) - Number(b.priceUsd);
+            });
+
+            enrichedData.onSaleListings = mergedListings;
+            enrichedData.onSaleListingsTotal = mergedListings.length;
+        } catch (error) {
+            console.error('[Gengar] On-sale listings error:', error);
+            enrichedData.onSaleListingsError = error.message || 'Unknown error';
+        }
+
+        return enrichedData;
     }
 
     // Dragonite: Currency & Crypto Rates
@@ -550,6 +1003,7 @@ class AgentSystem {
     updateGengarCard(data) {
         const card = document.getElementById('gengarData');
         const isProfit = data.arbitrageOpportunity > 0;
+        const onSalePreview = this.renderGengarOnSalePreview(data);
 
         card.innerHTML = `
             <div class="data-item">
@@ -584,6 +1038,7 @@ class AgentSystem {
                 </div>
             </div>
             ` : ''}
+            ${onSalePreview}
         `;
     }
 
@@ -615,7 +1070,11 @@ class AgentSystem {
 
         const charizard = this.currentData.charizard;
         const gengar = this.currentData.gengar;
+        if (!charizard || !gengar) {
+            return this.showKeywordListingResults();
+        }
         const isProfit = gengar.arbitrageOpportunity > 0;
+        const onSaleSection = this.renderOnSaleComparisonSection(gengar);
 
         comparisonGrid.innerHTML = `
             <div class="comparison-card">
@@ -644,10 +1103,149 @@ class AgentSystem {
                     <strong>${gengar.profitMargin}%</strong> margin
                 </p>
             </div>
+            ${onSaleSection}
         `;
 
         resultsDiv.style.display = 'block';
         this.updateStatus('Analysis Complete');
+    }
+
+    showKeywordListingResults() {
+        const resultsDiv = document.getElementById('arbitrageResults');
+        const comparisonGrid = document.getElementById('comparisonGrid');
+        const gengar = this.currentData.gengar || {};
+        const keywordLabel = this.escapeHtml(gengar.onSaleKeyword || '-');
+        const matchedCount = (gengar.onSaleMatchedCards || []).length;
+        const totalListings = gengar.onSaleListingsTotal || 0;
+        const onSaleSection = this.renderOnSaleComparisonSection(gengar);
+
+        comparisonGrid.innerHTML = `
+            <div class="comparison-card">
+                <h3>Keyword Listing Search</h3>
+                <p style="color: var(--text-secondary);">SNKRDUNK unsold listings (Price ASC)</p>
+                <div style="margin-top: 0.8rem; font-size: 1.45rem; font-weight: 700; color: var(--accent-blue);">
+                    ${keywordLabel}
+                </div>
+                <p style="margin-top: 0.8rem; color: var(--text-secondary);">
+                    ${matchedCount} matched cards | ${totalListings} unsold listings
+                </p>
+            </div>
+            ${onSaleSection}
+        `;
+
+        resultsDiv.style.display = 'block';
+    }
+
+    renderGengarOnSalePreview(data) {
+        const keywordLabel = this.escapeHtml(data.onSaleKeyword || '-');
+        if (data.onSaleListingsError) {
+            return `
+                <div class="data-item" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--glass-border);">
+                    <div class="data-label">Unsold Listings (Keyword: ${keywordLabel})</div>
+                    <div class="data-value" style="font-size: 0.82rem; color: #EF4444;">
+                        ${this.escapeHtml(data.onSaleListingsError)}
+                    </div>
+                </div>
+            `;
+        }
+
+        const listings = Array.isArray(data.onSaleListings) ? data.onSaleListings : [];
+        if (!listings.length) {
+            return `
+                <div class="data-item" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--glass-border);">
+                    <div class="data-label">Unsold Listings (Keyword: ${keywordLabel})</div>
+                    <div class="data-value" style="font-size: 0.82rem; color: var(--text-muted);">
+                        No unsold listings found
+                    </div>
+                </div>
+            `;
+        }
+
+        const previewItems = listings.slice(0, 5).map((item, index) => `
+            <div style="display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; align-items: center; padding: 0.32rem 0.45rem; border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <span style="font-size: 0.72rem; color: var(--text-muted);">#${index + 1}</span>
+                <span style="font-size: 0.78rem; color: var(--text-primary);">
+                    ${this.formatListingPrice(item)}
+                    <span style="display: block; margin-top: 2px; font-size: 0.68rem; color: var(--text-muted);">
+                        ${this.escapeHtml(item.cardName || item.cardId || '-')}
+                    </span>
+                </span>
+                <span style="font-size: 0.72rem; color: var(--text-secondary);">${this.escapeHtml(item.condition || '-')}</span>
+            </div>
+        `).join('');
+
+        return `
+            <div class="data-item" style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--glass-border);">
+                <div class="data-label">Unsold Listings (Keyword: ${keywordLabel})</div>
+                <div style="margin-top: 0.45rem; max-height: 150px; overflow-y: auto; border: 1px solid var(--glass-border); border-radius: 8px;">
+                    ${previewItems}
+                </div>
+                <div style="margin-top: 0.35rem; color: var(--text-muted); font-size: 0.72rem;">
+                    Showing lowest ${Math.min(5, listings.length)} / ${data.onSaleListingsTotal || listings.length} (${(data.onSaleMatchedCards || []).length} cards)
+                </div>
+            </div>
+        `;
+    }
+
+    renderOnSaleComparisonSection(gengar) {
+        const keywordLabel = this.escapeHtml(gengar.onSaleKeyword || '-');
+        if (gengar.onSaleListingsError) {
+            return `
+                <div class="comparison-card" style="grid-column: 1 / -1; border-color: #EF4444;">
+                    <h3>SNKRDUNK Unsold Listings (Price ASC)</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 0.5rem;">Keyword: <strong>${keywordLabel}</strong></p>
+                    <p style="color: #EF4444;">Failed to load list: ${this.escapeHtml(gengar.onSaleListingsError)}</p>
+                </div>
+            `;
+        }
+
+        const listings = Array.isArray(gengar.onSaleListings) ? gengar.onSaleListings : [];
+        if (!listings.length) {
+            return `
+                <div class="comparison-card" style="grid-column: 1 / -1;">
+                    <h3>SNKRDUNK Unsold Listings (Price ASC)</h3>
+                    <p style="color: var(--text-secondary);">No unsold listings available for keyword "${keywordLabel}"</p>
+                </div>
+            `;
+        }
+
+        const rows = listings.map((item, index) => `
+            <tr>
+                <td style="padding: 0.55rem 0.65rem; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.05);">${index + 1}</td>
+                <td style="padding: 0.55rem 0.65rem; color: var(--text-primary); border-bottom: 1px solid rgba(255,255,255,0.05);">
+                    ${this.escapeHtml(item.cardName || '-')}
+                    <span style="display:block; margin-top: 2px; color: var(--text-muted); font-size: 0.68rem;">${this.escapeHtml(item.cardId || '-')}</span>
+                </td>
+                <td style="padding: 0.55rem 0.65rem; color: var(--accent-green); font-weight: 600; border-bottom: 1px solid rgba(255,255,255,0.05);">${this.formatListingPrice(item)}</td>
+                <td style="padding: 0.55rem 0.65rem; color: var(--text-secondary); border-bottom: 1px solid rgba(255,255,255,0.05);">${this.escapeHtml(item.condition || '-')}</td>
+                <td style="padding: 0.55rem 0.65rem; color: var(--text-muted); font-family: monospace; border-bottom: 1px solid rgba(255,255,255,0.05);">${this.escapeHtml(item.listingUID || '-')}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="comparison-card" style="grid-column: 1 / -1;">
+                <h3>SNKRDUNK Unsold Listings (Price ASC)</h3>
+                <p style="color: var(--text-secondary); margin-bottom: 0.75rem;">
+                    Keyword "${keywordLabel}" | ${ (gengar.onSaleMatchedCards || []).length } matched cards | Total ${gengar.onSaleListingsTotal || listings.length} items
+                </p>
+                <div style="max-height: 520px; overflow-y: auto; border: 1px solid var(--glass-border); border-radius: 10px;">
+                    <table style="width: 100%; border-collapse: collapse; min-width: 640px;">
+                        <thead style="position: sticky; top: 0; background: rgba(139, 92, 246, 0.15);">
+                            <tr>
+                                <th style="text-align: left; padding: 0.55rem 0.65rem; font-size: 0.78rem; color: var(--text-secondary);">#</th>
+                                <th style="text-align: left; padding: 0.55rem 0.65rem; font-size: 0.78rem; color: var(--text-secondary);">Card</th>
+                                <th style="text-align: left; padding: 0.55rem 0.65rem; font-size: 0.78rem; color: var(--text-secondary);">Price</th>
+                                <th style="text-align: left; padding: 0.55rem 0.65rem; font-size: 0.78rem; color: var(--text-secondary);">Condition</th>
+                                <th style="text-align: left; padding: 0.55rem 0.65rem; font-size: 0.78rem; color: var(--text-secondary);">Listing UID</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
     }
 
     addChatMessage(sender, text, pokemonId) {
@@ -688,6 +1286,25 @@ class AgentSystem {
         document.getElementById('statusText').textContent = status;
     }
 
+    formatListingPrice(item) {
+        if (item && item.priceUsd != null && Number.isFinite(Number(item.priceUsd))) {
+            return `$${Number(item.priceUsd).toLocaleString()}`;
+        }
+        if (item && item.price) {
+            return item.price;
+        }
+        return '-';
+    }
+
+    escapeHtml(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
     calculateMockFMV(cardInfo) {
         // Mock FMV calculation based on grade and rarity
         const basePrice = 5000;
@@ -710,7 +1327,29 @@ function startAnalysis() {
     }
 }
 
+function startSelectedKeywordAnalysis() {
+    if (window.agentSystem) {
+        window.agentSystem.runSelectedKeywordAnalysis();
+    }
+}
+
+function toggleKeywordCardSelection(cardIdEncoded) {
+    if (!window.agentSystem) return;
+    const decoded = decodeURIComponent(String(cardIdEncoded || ''));
+    window.agentSystem.toggleKeywordCardSelection(decoded);
+}
+
 // Initialize agent system when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.agentSystem = new AgentSystem();
+
+    const certInput = document.getElementById('certInput');
+    if (certInput) {
+        certInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                startAnalysis();
+            }
+        });
+    }
 });
