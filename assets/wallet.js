@@ -1,13 +1,14 @@
-// Wallet Connection Handler
+// 🎭 DEMO MODE - Wallet Connection Handler (시연용)
+// 지갑 관련 모든 체크와 알림 비활성화
+
 class WalletConnector {
     constructor() {
-        this.currentAccount = null;
+        this.currentAccount = '0xDEMO0000000000000000000000000000DEMO'; // 시연용 더미 주소
         this.provider = null;
-        this.chainId = 143; // Monad Mainnet
-
-        // ✅ BUG1 FIX: 명시적 로그아웃 플래그 (sessionStorage)
+        this.chainId = 143;
         this.LOGOUT_FLAG = 'pkmon_user_logged_out';
-
+        
+        console.log('[DEMO MODE] 🎭 Wallet 시연 모드 - 모든 체크 비활성화');
         this.init();
     }
 
@@ -15,219 +16,53 @@ class WalletConnector {
         const connectBtn = document.getElementById('connectWalletBtn');
         if (connectBtn) {
             connectBtn.addEventListener('click', () => {
-                if (this.currentAccount) {
-                    this.showLogoutModal();
-                } else {
-                    this.connectWallet();
-                }
+                console.log('[DEMO MODE] Connect Wallet 버튼 클릭 - 무시됨');
             });
         }
-        this.checkConnection();
-        this.initLogoutModal();
+        // 시연 모드에서는 체크 건너뜀
+        console.log('[DEMO MODE] 지갑 체크 건너뜀');
     }
 
     async checkConnection() {
-        // ✅ FIX: 명시적 로그아웃 상태면 자동연결 완전 차단
-        if (sessionStorage.getItem(this.LOGOUT_FLAG) === 'true') {
-            console.log('[Wallet] 로그아웃 상태 - 자동 재연결 차단');
-            this.currentAccount = null;
-            this.updateUI();
-            return;
-        }
-
-        // ✅ FIX: localStorage 기반 "사이트 연결 승인" 여부 확인
-        // Rabby가 배경에서 계정을 노출하더라도,
-        // 사용자가 이 사이트에서 직접 Connect Wallet을 누른 적이 있어야만 자동 복원
-        if (localStorage.getItem('pkmon_wallet_connected') !== 'true') {
-            console.log('[Wallet] 이 사이트에서 연결 승인된 적 없음 - 자동연결 건너뜀');
-            this.currentAccount = null;
-            this.updateUI();
-            return;
-        }
-
-        // 위 두 조건을 통과한 경우만 자동 복원 (새로고침 시 연결 유지)
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-                if (accounts.length > 0) {
-                    this.currentAccount = accounts[0];
-                    this.updateUI();
-                    console.log('[Wallet] 기존 연결 복원:', this.currentAccount.slice(0, 10) + '...');
-                }
-            } catch (error) {
-                console.error('Error checking connection:', error);
-            }
-        }
+        // 시연 모드 - 항상 연결된 것으로 처리
+        console.log('[DEMO MODE] checkConnection 우회');
     }
 
     async connectWallet() {
-        try {
-            if (typeof window.ethereum === 'undefined') {
-                alert('Please install MetaMask or Rabby Wallet to continue');
-                return;
-            }
-
-            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-
-            // ✅ FIX: 지갑 연결 시 로그아웃 플래그 제거 + 연결 승인 플래그 저장
-            sessionStorage.removeItem(this.LOGOUT_FLAG);
-            localStorage.setItem('pkmon_wallet_connected', 'true');
-
-            this.currentAccount = accounts[0];
-            this.provider = window.ethereum;
-
-            await this.switchToMonad();
-            this.updateUI();
-
-            window.ethereum.on('accountsChanged', (accounts) => {
-                if (accounts.length > 0) {
-                    sessionStorage.removeItem(this.LOGOUT_FLAG);
-                    localStorage.setItem('pkmon_wallet_connected', 'true');
-                    this.currentAccount = accounts[0];
-                    this.updateUI();
-                    window.location.reload();
-                } else {
-                    this.currentAccount = null;
-                    this.updateUI();
-                }
-            });
-
-            window.ethereum.on('chainChanged', () => {
-                window.location.reload();
-            });
-
-        } catch (error) {
-            console.error('Error connecting wallet:', error);
-            if (error.code !== 4001) {
-                alert('Failed to connect wallet: ' + error.message);
-            }
-        }
+        console.log('[DEMO MODE] connectWallet 호출 - 무시됨');
     }
 
     async switchToMonad() {
-    // ✅ 모나드 메인넷 설정 정보
-    const MONAD_MAINNET_PARAMS = {
-        chainId: '0x8F', // 143을 16진수로 표기
-        chainName: 'Monad Mainnet',
-        nativeCurrency: { name: 'Monad', symbol: 'MON', decimals: 18 },
-        rpcUrls: ['https://rpc2.monad.xyz'], // 메인넷 RPC 주소
-        blockExplorerUrls: ['https://monadvision.com'] // 메인넷 익스플로러
-    };
-
-    try {
-        await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: MONAD_MAINNET_PARAMS.chainId }],
-        });
-    } catch (switchError) {
-        if (switchError.code === 4902) {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_addEthereumChain',
-                    params: [MONAD_MAINNET_PARAMS]
-                });
-            } catch (addError) {
-                console.error('Error adding Monad network:', addError);
-            }
-        }
-    }
-}
-
-    initLogoutModal() {
-        const modalHTML = `
-            <div id="walletLogoutModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
-                <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1);">
-                    <div style="text-align: center; margin-bottom: 30px;">
-                        <div style="width: 80px; height: 80px; margin: 0 auto 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                            <i class="fas fa-sign-out-alt" style="font-size: 36px; color: white;"></i>
-                        </div>
-                        <h2 style="color: white; margin: 0 0 10px 0; font-size: 24px;">Disconnect Wallet</h2>
-                        <p id="logoutWalletAddress" style="color: #94a3b8; font-size: 14px; margin: 0; font-family: monospace;"></p>
-                    </div>
-                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; margin-bottom: 30px;">
-                        <p style="color: #cbd5e1; margin: 0; font-size: 14px; line-height: 1.6;">
-                            <i class="fas fa-info-circle" style="color: #60a5fa; margin-right: 8px;"></i>
-                            Disconnecting your wallet will maintain your payment history, but you'll need to reconnect to access content again.
-                        </p>
-                    </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button id="cancelLogoutBtn" style="flex: 1; padding: 14px 24px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600;">Cancel</button>
-                        <button id="confirmLogoutBtn" style="flex: 1; padding: 14px 24px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 600;">Disconnect</button>
-                    </div>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-        document.getElementById('cancelLogoutBtn').addEventListener('click', () => this.hideLogoutModal());
-        document.getElementById('confirmLogoutBtn').addEventListener('click', () => this.logout());
-        document.getElementById('walletLogoutModal').addEventListener('click', (e) => {
-            if (e.target.id === 'walletLogoutModal') this.hideLogoutModal();
-        });
-    }
-
-    showLogoutModal() {
-        const modal = document.getElementById('walletLogoutModal');
-        const addressElement = document.getElementById('logoutWalletAddress');
-        if (modal && this.currentAccount) {
-            addressElement.textContent = `${this.currentAccount.slice(0, 10)}...${this.currentAccount.slice(-8)}`;
-            modal.style.display = 'flex';
-        }
-    }
-
-    hideLogoutModal() {
-        const modal = document.getElementById('walletLogoutModal');
-        if (modal) modal.style.display = 'none';
-    }
-
-    async logout() {
-        // ✅ FIX: 로그아웃 플래그 저장 + 연결 승인 플래그 제거
-        // 이후 페이지 새로고침해도 자동연결 완전 차단
-        sessionStorage.setItem(this.LOGOUT_FLAG, 'true');
-        localStorage.removeItem('pkmon_wallet_connected');
-        this.currentAccount = null;
-        this.provider = null;
-        this.updateUI();
-        this.hideLogoutModal();
-        
-        // 결제가 필요한 페이지(대시보드)에서 로그아웃하면 홈으로 이동
-        // utility, pokememe은 자유 접근 페이지이므로 제외 → 그냥 reload
-        const isPaywalled = window.location.pathname.includes('agent-dashboard') || 
-                            window.location.pathname.includes('pokedex') ||
-                            window.location.pathname.includes('tcg-search');
-        
-        if (isPaywalled) {
-            setTimeout(() => window.location.href = 'index.html', 300);
-        } else {
-            setTimeout(() => window.location.reload(), 300);
-        }
+        console.log('[DEMO MODE] switchToMonad 호출 - 무시됨');
     }
 
     updateUI() {
-        const connectBtn = document.getElementById('connectWalletBtn');
-        if (this.currentAccount && connectBtn) {
-            // ✅ 전역 플래그 설정 (배틀 페이지에서 사용)
-            window.walletConnected = true;
-            
-            const shortAddress = `${this.currentAccount.slice(0, 6)}...${this.currentAccount.slice(-4)}`;
-            connectBtn.innerHTML = `<i class="fas fa-check-circle"></i> ${shortAddress} <i class="fas fa-sign-out-alt" style="margin-left: 8px; opacity: 0.7; font-size: 12px;"></i>`;
-            connectBtn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
-            connectBtn.title = 'Click to disconnect wallet';
-        } else if (connectBtn) {
-            // ✅ 지갑 연결 해제 시 플래그 제거
-            window.walletConnected = false;
-            
-            connectBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
-            connectBtn.style.background = '';
-            connectBtn.title = 'Click to connect wallet';
-        }
+        // UI 업데이트는 건너뜀
+        console.log('[DEMO MODE] updateUI 호출 - 무시됨');
     }
 
-    getAccount() {
-        return this.currentAccount;
+    showLogoutModal() {
+        console.log('[DEMO MODE] showLogoutModal 호출 - 무시됨');
+    }
+
+    initLogoutModal() {
+        console.log('[DEMO MODE] initLogoutModal 호출 - 무시됨');
+    }
+
+    logout() {
+        console.log('[DEMO MODE] logout 호출 - 무시됨');
+    }
+
+    setupEventListeners() {
+        console.log('[DEMO MODE] setupEventListeners 호출 - 무시됨');
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    window.walletConnector = new WalletConnector();
-});
+// 전역 객체 생성
+window.walletConnector = new WalletConnector();
+
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+console.log('🎭 [DEMO MODE] Wallet 시스템 초기화 완료');
+console.log('✅ 지갑 연결 없이도 모든 기능 사용 가능');
+console.log('✅ 알림 메시지 모두 비활성화');
+console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
