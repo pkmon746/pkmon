@@ -610,15 +610,16 @@
                         <h3 style="text-align: center; margin-bottom: 1rem;"><i class="fas fa-coins"></i> Place Your
                             Bets</h3>
                         <div class="betting-controls">
-                            <button class="team-btn btn-team-a" onclick="placeBet('A')">Bet Team A</button>
+                            <button class="team-btn btn-team-a" onclick="placeBet('A')">BET TEAM A</button>
 
-                            <div class="bet-input-group">
+                            <!-- 🎭 DEMO MODE: 베팅 금액 입력 숨김 -->
+                            <div class="bet-input-group" style="display: none;">
                                 <input type="number" id="betAmount" class="bet-input" placeholder="0.0" step="0.1">
                                 <span class="token-label"
                                     style="padding: 0.75rem; color: var(--accent-yellow); font-weight: bold; background: rgba(255, 193, 7, 0.1);">PKMON</span>
                             </div>
 
-                            <button class="team-btn btn-team-b" onclick="placeBet('B')">Bet Team B</button>
+                            <button class="team-btn btn-team-b" onclick="placeBet('B')">BET TEAM B</button>
                         </div>
                         <div
                             style="text-align: center; margin-top: 1rem; font-size: 0.9rem; color: var(--text-secondary);">
@@ -702,6 +703,16 @@
         });
         
         function placeBet(team) {
+            // 🎭 DEMO MODE: 베팅 기능 비활성화
+            console.log('[DEMO MODE] 베팅 버튼 클릭:', team);
+            console.log('[DEMO MODE] 시연용 - 실제 베팅 안 됨');
+            
+            // 시연용 알림 표시
+            showCustomAlert(`Team ${team} selected!\n(Demo Mode - No actual betting)`);
+            
+            return; // 실제 베팅 로직 실행 안 함
+            
+            /* 원본 코드 (시연 후 복구용)
             const MAX_BET = 10;
             const amount = parseFloat(document.getElementById('betAmount').value);
             const token = 'PKMON';
@@ -739,6 +750,7 @@
             if (window.battleEngine) {
                 window.battleEngine.placeBet(team, amount.toString(), token);
             }
+            */
         }
     </script>
 
