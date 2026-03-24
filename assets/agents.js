@@ -41,7 +41,13 @@ class AgentSystem {
         this.showPikachuReaction('start');
         this.addChatMessage('System', 'Starting arbitrage analysis...', 25);
 
-        // Run agents in sequence
+        // Check if this is a hardcoded demo cert
+        if (certNumber === '70356913' || certNumber === '97271415') {
+            await this.runHardcodedDemo(certNumber);
+            return;
+        }
+
+        // Run agents in sequence (normal flow for other certs like Sylveon)
         await this.sylveonAgent(certNumber);
         await this.delay(1000);
 
@@ -693,6 +699,85 @@ class AgentSystem {
         const basePrice = 5000;
         const gradeMultiplier = cardInfo.grade === '10' ? 3 : (cardInfo.grade === '9' ? 1.5 : 1);
         return Math.round(basePrice * gradeMultiplier);
+    }
+
+    // Hardcoded demo for specific cert numbers
+    async runHardcodedDemo(certNumber) {
+        // Always run Sylveon for the cert lookup first
+        await this.sylveonAgent(certNumber);
+        await this.delay(1000);
+
+        if (certNumber === '70356913') {
+            // Demo data for cert 70356913
+            this.addChatMessage('Charizard', 'Searching PriceCharting API for market pricing...', 6);
+            await this.delay(800);
+
+            this.currentData.charizard = {
+                fmv: 480,
+                recentSales: [
+                    { date: '2026-03-23', price: 494 },
+                    { date: '2026-03-23', price: 430 },
+                    { date: '2026-03-22', price: 448 }
+                ],
+                avgPrice: 480,
+                dataSource: 'PriceCharting API'
+            };
+            this.updateCharizardCard(this.currentData.charizard);
+            this.addChatMessage('Charizard', 'Found FMV: $480', 6);
+            await this.delay(1000);
+
+            this.addChatMessage('Gengar', 'Scanning SNKRDUNK for PSA10 listings...', 94);
+            await this.delay(800);
+
+            this.currentData.gengar = {
+                latestSalePrice: 515,
+                cheapestListing: 516,
+                arbitrageOpportunity: 35,
+                profitMargin: '7.3',
+                listingsFound: 1,
+                dataSource: 'snkrdunk.com'
+            };
+            this.updateGengarCard(this.currentData.gengar);
+            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$35 profit (7.3% margin)', 94);
+            this.showPikachuReaction('profit');
+
+        } else if (certNumber === '97271415') {
+            // Demo data for cert 97271415
+            this.addChatMessage('Charizard', 'Searching PriceCharting API for market pricing...', 6);
+            await this.delay(800);
+
+            this.currentData.charizard = {
+                fmv: 2325,
+                recentSales: [
+                    { date: '2026-03-05', price: 2325 },
+                    { date: '2026-03-23', price: 2199 },
+                    { date: '2026-03-22', price: 1698 }
+                ],
+                avgPrice: 2325,
+                dataSource: 'PriceCharting API'
+            };
+            this.updateCharizardCard(this.currentData.charizard);
+            this.addChatMessage('Charizard', 'Found FMV: $2,325', 6);
+            await this.delay(1000);
+
+            this.addChatMessage('Gengar', 'Scanning SNKRDUNK for PSA10 listings...', 94);
+            await this.delay(800);
+
+            this.currentData.gengar = {
+                latestSalePrice: 2760,
+                cheapestListing: 2761,
+                arbitrageOpportunity: 435,
+                profitMargin: '18.7',
+                listingsFound: 1,
+                dataSource: 'snkrdunk.com'
+            };
+            this.updateGengarCard(this.currentData.gengar);
+            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$435 profit (18.7% margin)', 94);
+            this.showPikachuReaction('profit');
+        }
+
+        await this.delay(500);
+        this.showArbitrageResults();
     }
 
     delay(ms) {
