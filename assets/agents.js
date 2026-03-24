@@ -732,13 +732,13 @@ class AgentSystem {
             this.currentData.gengar = {
                 latestSalePrice: 515,
                 cheapestListing: 516,
-                arbitrageOpportunity: 35,
+                arbitrageOpportunity: 36,
                 profitMargin: '7.3',
                 listingsFound: 1,
                 dataSource: 'snkrdunk.com'
             };
             this.updateGengarCard(this.currentData.gengar);
-            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$35 profit (7.3% margin)', 94);
+            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$36 profit (7.3% margin)', 94);
             this.showPikachuReaction('profit');
 
         } else if (certNumber === '97271415') {
@@ -766,13 +766,13 @@ class AgentSystem {
             this.currentData.gengar = {
                 latestSalePrice: 2760,
                 cheapestListing: 2761,
-                arbitrageOpportunity: 435,
+                arbitrageOpportunity: 436,
                 profitMargin: '18.7',
                 listingsFound: 1,
                 dataSource: 'snkrdunk.com'
             };
             this.updateGengarCard(this.currentData.gengar);
-            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$435 profit (18.7% margin)', 94);
+            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$436 profit (18.7% margin)', 94);
             this.showPikachuReaction('profit');
         }
 
