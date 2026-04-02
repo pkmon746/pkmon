@@ -5,16 +5,16 @@
 // 미결제 지갑 → 결제 확인 모달 → 지갑 승인
 // ============================================================
 
-class PKMONOneTimePayment {
+class RLOOneTimePayment {
     constructor() {
-        // ✅ PKMON 토큰 컨트랙트 주소 (Monad Testnet)
-        this.tokenAddress = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        // ✅ RLO 토큰 컨트랙트 주소 (Monad Testnet)
+        this.tokenAddress = '0x340eC38B76eF2074bfFC028c490941b8e34f9eb0';
 
         // ✅ 결제 수신 지갑 주소 - 반드시 실제 주소로 변경하세요!
-        this.receiverAddress = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777'; // TODO: 프로젝트 지갑 주소로 변경
+        this.receiverAddress = '0x340eC38B76eF2074bfFC028c490941b8e34f9eb0'; // TODO: 프로젝트 지갑 주소로 변경
 
         // 결제 금액
-        this.paymentAmount = 10000; // 10,000 PKMON
+        this.paymentAmount = 10000; // 10,000 RLO
 
         // 🔧 Backend API URL (배포 시 실제 서버 주소로 변경)
         this.apiUrl = 'http://localhost:3001/api'; // TODO: 프로덕션 서버 주소로 변경
@@ -85,7 +85,7 @@ class PKMONOneTimePayment {
     // 로컬스토리지 확인 (폴백)
     checkPaymentHistoryLocal(userAddress) {
         try {
-            const paidUsers = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+            const paidUsers = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
             return paidUsers.includes(userAddress.toLowerCase());
         } catch (e) {
             return false;
@@ -95,11 +95,11 @@ class PKMONOneTimePayment {
     // 로컬스토리지 저장
     savePaymentHistoryLocal(userAddress) {
         try {
-            const paidUsers = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+            const paidUsers = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
             const addr = userAddress.toLowerCase();
             if (!paidUsers.includes(addr)) {
                 paidUsers.push(addr);
-                localStorage.setItem('pkmon_paid_users', JSON.stringify(paidUsers));
+                localStorage.setItem('rlo_paid_users', JSON.stringify(paidUsers));
             }
         } catch (e) {
             console.warn('[Payment] localStorage 저장 실패:', e);
@@ -147,7 +147,7 @@ class PKMONOneTimePayment {
         const decimals = await contract.methods.decimals().call();
         this.userBalance = parseFloat(rawBalance) / Math.pow(10, parseInt(decimals));
 
-        console.log(`[Payment] 잔액: ${this.userBalance} PKMON`);
+        console.log(`[Payment] 잔액: ${this.userBalance} RLO`);
         return this.userBalance;
     }
 
@@ -267,25 +267,25 @@ class PKMONOneTimePayment {
         const missing = Math.max(0, this.paymentAmount - (this.userBalance || 0));
         const modal = this.createModal('insufficient', `
             <div class="ppm-icon">⚠️</div>
-            <h2>PKMON 잔액 부족</h2>
-            <p class="ppm-sub">이 서비스를 이용하려면 <strong>${this.paymentAmount.toLocaleString()} PKMON</strong>이 필요합니다.</p>
+            <h2>RLO 잔액 부족</h2>
+            <p class="ppm-sub">이 서비스를 이용하려면 <strong>${this.paymentAmount.toLocaleString()} RLO</strong>이 필요합니다.</p>
             <div class="ppm-table">
                 <div class="ppm-row">
                     <span>현재 잔액</span>
-                    <strong class="red">${(this.userBalance || 0).toLocaleString()} PKMON</strong>
+                    <strong class="red">${(this.userBalance || 0).toLocaleString()} RLO</strong>
                 </div>
                 <div class="ppm-row">
                     <span>필요 금액</span>
-                    <strong>${this.paymentAmount.toLocaleString()} PKMON</strong>
+                    <strong>${this.paymentAmount.toLocaleString()} RLO</strong>
                 </div>
                 <div class="ppm-row highlight-red">
                     <span>부족한 금액</span>
-                    <strong class="red">${missing.toLocaleString()} PKMON</strong>
+                    <strong class="red">${missing.toLocaleString()} RLO</strong>
                 </div>
             </div>
             <p class="ppm-tip">💡 한 번만 결제하면 영구 이용 가능!</p>
             <div class="ppm-buttons">
-                <a href="https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777"
+                <a href="https://nad.fun/tokens/0x340eC38B76eF2074bfFC028c490941b8e34f9eb0"
                    target="_blank" class="ppm-btn primary">
                     🛒 PKMON 구매하기
                 </a>
@@ -301,27 +301,27 @@ class PKMONOneTimePayment {
             const balanceAfter = (this.userBalance - this.paymentAmount).toLocaleString();
             const modal = this.createModal('confirm', `
                 <div class="ppm-icon">💳</div>
-                <h2>10,000 PKMON 결제</h2>
+                <h2>10,000 RLO 결제</h2>
                 <p class="ppm-sub">아래 내용을 확인 후 결제를 승인해주세요.</p>
                 <div class="ppm-table">
                     <div class="ppm-row">
                         <span>결제 금액</span>
-                        <strong>${this.paymentAmount.toLocaleString()} PKMON</strong>
+                        <strong>${this.paymentAmount.toLocaleString()} RLO</strong>
                     </div>
                     <div class="ppm-row">
                         <span>현재 잔액</span>
-                        <strong>${(this.userBalance || 0).toLocaleString()} PKMON</strong>
+                        <strong>${(this.userBalance || 0).toLocaleString()} RLO</strong>
                     </div>
                     <div class="ppm-row">
                         <span>결제 후 잔액</span>
-                        <strong>${balanceAfter} PKMON</strong>
+                        <strong>${balanceAfter} RLO</strong>
                     </div>
                 </div>
                 <p class="ppm-tip green">✅ 한 번 결제로 영구 이용!</p>
                 <p class="ppm-tip red">⚠️ 이 트랜잭션은 되돌릴 수 없습니다.</p>
                 <div class="ppm-buttons">
                     <button class="ppm-btn primary" id="ppm-confirm-btn">
-                        ✔ ${this.paymentAmount.toLocaleString()} PKMON 결제
+                        ✔ ${this.paymentAmount.toLocaleString()} RLO 결제
                     </button>
                     <button class="ppm-btn secondary" id="ppm-cancel-btn">취소</button>
                 </div>
@@ -362,7 +362,7 @@ class PKMONOneTimePayment {
         const modal = this.createModal('success', `
             <div class="ppm-icon">🎉</div>
             <h2>결제 완료!</h2>
-            <p class="ppm-sub"><strong>${this.paymentAmount.toLocaleString()} PKMON</strong> 결제가 성공했습니다.</p>
+            <p class="ppm-sub"><strong>${this.paymentAmount.toLocaleString()} RLO</strong> 결제가 성공했습니다.</p>
             <div class="ppm-info-box green">
                 <span>🔓 영구 접근 권한이 부여되었습니다!</span>
             </div>
@@ -590,6 +590,6 @@ class PKMONOneTimePayment {
 // DOM 로드 후 초기화
 // ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    window.pkmonPayment = new PKMONOneTimePayment();
+    window.rloPayment = new RLOOneTimePayment();
     console.log('[PKMON] 결제 시스템 초기화 완료 (백엔드 연동)');
 });
