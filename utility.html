@@ -370,7 +370,7 @@
     <script>
     async function _runDashboardGate() {
         var BACKEND    = 'https://pkmon-payment-backend-api.onrender.com/api';
-        var TOKEN_ADDR = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        var TOKEN_ADDR = '0x340eC38B76eF2074bfFC028c490941b8e34f9eb0';
         var RECEIVER   = '0xdF286dC4f9bB608f05369Dcd9B105dA94107b5C9';
         var AMOUNT     = 500000;
         var ERC20_ABI  = [
@@ -413,7 +413,7 @@
         function hideSpinner() { var s=document.getElementById('_gateSpinner'); if(s)s.remove(); }
 
         // 1. 로그아웃 체크
-        if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
+        if (sessionStorage.getItem('rlo_user_logged_out') === 'true') {
             toast('&#x1F512; Please connect your wallet first!<br>Click "Connect Wallet" button.');
             pulseWallet();
             return;
@@ -437,7 +437,7 @@
                 if (res.ok) { var d = await res.json(); hasPaid = d.hasPaid; }
             } catch(e) {
                 try {
-                    var local = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                    var local = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
                     hasPaid = local.indexOf(account.toLowerCase()) !== -1;
                 } catch(e2) {}
             }
@@ -552,10 +552,10 @@
                     });
                 } catch(e) {}
                 try {
-                    var paid = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                    var paid = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
                     if (paid.indexOf(account.toLowerCase()) === -1) {
                         paid.push(account.toLowerCase());
-                        localStorage.setItem('pkmon_paid_users', JSON.stringify(paid));
+                        localStorage.setItem('rlo_paid_users', JSON.stringify(paid));
                     }
                 } catch(e) {}
                 var modal = document.getElementById('_payModal'); if (modal) modal.remove();
