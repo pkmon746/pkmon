@@ -529,8 +529,8 @@
             var btn = document.getElementById('_payBtn');
             btn.textContent = 'Processing...'; btn.disabled = true;
             try {
-                if (window.walletConnector && window.walletConnector.switchToMonad) {
-                    await window.walletConnector.switchToMonad();
+                if (window.walletConnector && window.walletConnector.switchToSepolia) {
+                    await window.walletConnector.switchToSepolia();
                 }
                 var p2 = new window.ethers.providers.Web3Provider(window.ethereum);
                 var signer = p2.getSigner();
