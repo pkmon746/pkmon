@@ -10,10 +10,10 @@ class BattleEngine {
         this.teamB = [];
         this.bets = { A: 0, B: 0 };
         this.userBets = []; // { team, amount, token }
+        this.battle_id = null;
 
         this.battleLog = [];
         this.turn = 0;
-        this.battle_id = null;
 
         // DOM Elements
         this.elements = {
@@ -38,8 +38,11 @@ class BattleEngine {
         // Start the global timer loop
         setInterval(() => this.tick(), 1000);
 
-        // Start Chat Simulation (increased frequency)
-        setInterval(() => this.processChat(), 3000); // More frequent chat
+        // Start Chat Simulation
+        setInterval(() => this.processChat(), 3000);
+
+        // Start Betting Simulation
+        setInterval(() => this.simulateBetting(), 2500);
 
         // Initial setup
         this.startNewCycle();
@@ -53,10 +56,10 @@ class BattleEngine {
 
     async startNewCycle() {
         this.gameState = 'BETTING';
+        this.battle_id = `battle_${Date.now()}`;
 
         // Reset state
         this.bets = { A: 0, B: 0 };
-        this.battle_id = `battle_${Date.now()}`;
         this.userBets = [];
         this.turn = 0;
         this.updatePoolDisplay();
@@ -70,6 +73,56 @@ class BattleEngine {
         this.log(`⚔️ MATCHUP: ${this.teamA[0].name} vs ${this.teamB[0].name}`);
         this.triggerChat('matchup', {});
         this.triggerChat('idle', {});
+    }
+
+    simulateBetting() {
+        if (this.gameState !== 'BETTING') return;
+
+        // 40% chance to skip a tick for randomness
+        if (Math.random() > 0.6) return;
+
+        const fakeUsers = [
+            "AshLover99", "TeamRocket_Grunt", "MistyWater", "Brock_Solid", "GaryOak_Official",
+            "PokeFan_KR", "Satoshi_JP", "Red_Champion", "Blue_Rival", "Prof_Oak",
+            "Nurse_Joy_Fan", "Officer_Jenny", "Eevee_Cute", "Pika_Pika", "Mewtwo_Strikes",
+            "Gengar_Ghost", "Dragonite_Fly", "Snorlax_Sleep", "Jiggly_Sing", "Psyduck_Confused",
+            "Crypto_Whale", "Doge_Coin", "Shiba_Inu", "Pepe_Frog", "Wojak_Trader"
+        ];
+
+        const randomUser = fakeUsers[Math.floor(Math.random() * fakeUsers.length)];
+        const teams = ['A', 'B'];
+        const randomTeam = teams[Math.floor(Math.random() * teams.length)];
+
+        // Random bet amount (weighted towards smaller bets)
+        let amount;
+        const rand = Math.random();
+        if (rand > 0.95) amount = Math.floor(Math.random() * 5000) + 1000; // Whale bet
+        else if (rand > 0.8) amount = Math.floor(Math.random() * 1000) + 500; // Big bet
+        else amount = Math.floor(Math.random() * 400) + 10; // Small bet
+
+        // Round to 10
+        amount = Math.ceil(amount / 10) * 10;
+
+        // Update internal state
+        this.bets[randomTeam] += amount;
+        this.updatePoolDisplay();
+
+        // 30% chance to show in log to avoid spam
+        if (Math.random() > 0.7) {
+            const teamColor = randomTeam === 'A' ? 'var(--accent-blue)' : '#EF4444';
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: #bbb">${randomUser}</span> bet <span style="color: var(--accent-yellow)">${amount} PKMON</span> on <span style="color: ${teamColor}">Team ${randomTeam}</span>`;
+            logEntry.style.fontSize = '0.8rem';
+            logEntry.style.padding = '2px 0';
+            logEntry.style.opacity = '0.8';
+
+            this.elements.log.appendChild(logEntry);
+            this.elements.log.scrollTop = this.elements.log.scrollHeight;
+        }
+
+        // Flash the pool display
+        this.elements.pool.style.color = '#fff';
+        setTimeout(() => this.elements.pool.style.color = 'var(--accent-yellow)', 200);
     }
 
     async fetchTeams() {
@@ -117,12 +170,9 @@ class BattleEngine {
     }
 
     renderTeams() {
-        // Render Team A
         if (this.teamA.length > 0) {
             this.updateUnitDOM('teamA', this.teamA[0]);
         }
-
-        // Render Team B
         if (this.teamB.length > 0) {
             this.updateUnitDOM('teamB', this.teamB[0]);
         }
@@ -135,21 +185,18 @@ class BattleEngine {
             return;
         }
 
-        // Update name
         const nameEl = el.querySelector('.name');
         if (nameEl) {
             nameEl.textContent = pokemon.name;
             nameEl.style.opacity = '1';
         }
 
-        // Update sprite
         const sprite = el.querySelector('.pokemon-sprite');
         if (sprite) {
             sprite.src = pokemon.sprite;
             sprite.style.opacity = '1';
         }
 
-        // Reset Health Bar
         const hpBar = el.querySelector('.hp-bar');
         if (hpBar) {
             hpBar.style.width = '100%';
@@ -158,10 +205,8 @@ class BattleEngine {
     }
 
     tick() {
-        // Timer Logic
         this.timer--;
         if (this.timer < 0) {
-            // Resync to UTC
             this.syncToUTC();
             return;
         }
@@ -170,7 +215,7 @@ class BattleEngine {
         const secs = this.timer % 60;
         this.elements.timer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
-        // Phase Transitions - use <= to be safe
+        // Phase Transitions
         if (this.gameState === 'BETTING' && this.timer <= 0) {
             this.startBattle();
         }
@@ -182,12 +227,10 @@ class BattleEngine {
         this.log("⚠️ BETTING CLOSED - BATTLE COMMENCING ⚠️");
         this.log(`🔥 ${this.teamA[0].name} (HP: ${this.teamA[0].hp}) vs ${this.teamB[0].name} (HP: ${this.teamB[0].hp})`);
 
-        // Start Combat Loop
-        this.combatInterval = setInterval(() => this.combatStep(), 2500); // Slightly slower for readability
+        this.combatInterval = setInterval(() => this.combatStep(), 2500);
     }
 
     combatStep() {
-        // Simple 1v1 logic for MVP (Team Leader vs Team Leader)
         const p1 = this.teamA[0];
         const p2 = this.teamB[0];
 
@@ -200,7 +243,6 @@ class BattleEngine {
         this.turn++;
         const attacker = p1.speed >= p2.speed ? (this.turn % 2 !== 0 ? p1 : p2) : (this.turn % 2 !== 0 ? p2 : p1);
         const defender = attacker === p1 ? p2 : p1;
-        const attackerTeam = attacker === p1 ? 'A' : 'B';
         const defenderTeam = attacker === p1 ? 'teamB' : 'teamA';
 
         // Select a random move
@@ -220,7 +262,6 @@ class BattleEngine {
             defender.alive = false;
         }
 
-        // Vivid Battle Log with move name
         let logMsg = `⚡ ${attacker.name} used ${move.name}!`;
         this.log(logMsg);
 
@@ -229,22 +270,13 @@ class BattleEngine {
         if (typeBonus < 1) this.log('   🛡️ Not very effective...');
         this.log(`   └─ ${defender.name} took ${damage} damage! (HP: ${defender.hp}/${defender.maxHp})`);
 
-        // Update UI with visual effect
         this.updateHpBar(defenderTeam, defender);
         this.showAttackEffect(defenderTeam, crit);
 
-        // Chat Reactions (more frequent)
-        if (crit) {
-            this.triggerChat('crit_hit', { damage: damage });
-        }
-        if (typeBonus > 1) {
-            this.triggerChat('super_effective', {});
-        }
-        if (move.name) {
-            this.triggerChat('move_used', { move: move.name });
-        }
+        if (crit) this.triggerChat('crit_hit', { damage: damage });
+        if (typeBonus > 1) this.triggerChat('super_effective', {});
+        if (move.name) this.triggerChat('move_used', { move: move.name });
 
-        // Low HP warning
         const hpPercent = (defender.hp / defender.maxHp) * 100;
         if (hpPercent < 30 && hpPercent > 0) {
             this.triggerChat('low_hp', {});
@@ -255,7 +287,6 @@ class BattleEngine {
         const el = document.getElementById(targetTeamId);
         if (!el) return;
 
-        // Flash effect
         el.style.transition = 'filter 0.2s';
         el.style.filter = isCrit ? 'brightness(2) saturate(2)' : 'brightness(1.5)';
 
@@ -263,7 +294,6 @@ class BattleEngine {
             el.style.filter = 'brightness(1)';
         }, 200);
 
-        // Shake animation
         const sprite = el.querySelector('.pokemon-sprite');
         if (sprite) {
             sprite.style.animation = 'shake 0.3s';
@@ -274,7 +304,6 @@ class BattleEngine {
     }
 
     checkTypeEffectiveness(attackerTypes, defenderTypes) {
-        // Expanded type chart
         const chart = {
             'fire': { 'grass': 2, 'ice': 2, 'bug': 2, 'steel': 2, 'water': 0.5, 'fire': 0.5, 'rock': 0.5, 'dragon': 0.5 },
             'water': { 'fire': 2, 'ground': 2, 'rock': 2, 'grass': 0.5, 'water': 0.5, 'dragon': 0.5 },
@@ -326,11 +355,11 @@ class BattleEngine {
         this.gameState = 'ENDED';
         this.updateStatus(`🏆 TEAM ${winningTeam} WINS!`);
         this.log(`🏆 TEAM ${winningTeam} VICTORIOUS! 🏆`);
-        
+
         this.triggerChat('win', { team: winningTeam });
         setTimeout(() => this.triggerChat('win', { team: winningTeam }), 1000);
         setTimeout(() => this.triggerChat('win', { team: winningTeam }), 2000);
-        
+
         // 배틀 결과 기록 API
         fetch('https://pkmon-payment-backend-api.onrender.com/api/battle-result', {
             method: 'POST',
@@ -343,29 +372,28 @@ class BattleEngine {
                 timestamp: Date.now()
             })
         }).catch(e => console.warn('[Battle] Failed to record results:', e));
-        
-        // 승패 모달
-        
+
+        // 유저 베팅 결과 처리
         if (this.userBets.length > 0) {
             const userBet = this.userBets[this.userBets.length - 1];
             const didWin = userBet.team === winningTeam;
             const betAmount = parseFloat(userBet.amount);
-            const totalPool = 10000 + betAmount;
+            const totalPool = this.bets.A + this.bets.B;
 
-        if (didWin) {
-            setTimeout(() => this.showWinModal(betAmount), 1000);
-        } 
-        else {
-            setTimeout(() => this.showLoseModal(betAmount, totalPool), 1000);
+            if (didWin) {
+                setTimeout(() => this.showWinModal(betAmount), 1000);
+            } else {
+                setTimeout(() => this.showLoseModal(betAmount, totalPool), 1000);
+            }
         }
+
+        // 다음 사이클 시작
+        setTimeout(() => {
+            this.syncToUTC();
+            this.startNewCycle();
+        }, 10000);
     }
 
-    setTimeout(() => {
-        this.syncToUTC();
-        this.startNewCycle();
-    }, 15000);
-    }
-    
     showWinModal(betAmount) {
         const payout = (betAmount * 2).toFixed(2);
         const modal = document.createElement('div');
@@ -383,14 +411,13 @@ class BattleEngine {
             </div>
         </div>
         `;
-        
         document.body.appendChild(modal);
         document.getElementById('claimRewardBtn').addEventListener('click', async () => {
             modal.remove();
             await this.claimReward(betAmount);
         });
     }
-    
+
     showLoseModal(betAmount, totalPool) {
         const modal = document.createElement('div');
         modal.id = 'betResultModal';
@@ -398,7 +425,7 @@ class BattleEngine {
         <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
             <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
                 <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">That’s unfortunate,</div>
+                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">That's unfortunate!</div>
                 <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">Would you like to try again?</div>
                 <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
                     <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Bet Pool</div>
@@ -408,10 +435,9 @@ class BattleEngine {
             </div>
         </div>
         `;
-        
         document.body.appendChild(modal);
     }
-    
+
     async claimReward(betAmount) {
         const payout = betAmount * 2;
         try {
@@ -419,16 +445,16 @@ class BattleEngine {
             const provider = new window.ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
             const userAddress = await signer.getAddress();
-            
+
             const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ to: userAddress, amount: payout, timestamp: Date.now() })
             });
-            
+
             if (response.ok) {
                 const data = await response.json();
-                this.log(`🎉 Reward claimed! ${payout} RLO sent. TX: ${data.txHash?.slice(0,10)}...`);
+                this.log(`🎉 Reward claimed! ${payout} RLO sent. TX: ${data.txHash?.slice(0, 10)}...`);
                 const successModal = document.createElement('div');
                 successModal.innerHTML = `
                 <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
@@ -439,182 +465,86 @@ class BattleEngine {
                         <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
                     </div>
                 </div>
-            `;
-            document.body.appendChild(successModal);
-            }
-            else {
+                `;
+                document.body.appendChild(successModal);
+            } else {
                 throw new Error('Payout API failed');
             }
-        }
-        catch (error) {
+        } catch (error) {
             console.error('[Claim] failed:', error);
             this.log(`❌ Claim failed: ${error.message}`);
             alert('Claim failed. Please contact support.');
-    }
-}
-
-    setTimeout(() => {
-        this.syncToUTC();
-        this.startNewCycle();
-    }, 15000);
-}
-
-showWinModal(betAmount) {
-    const payout = (betAmount * 2).toFixed(2);
-    const modal = document.createElement('div');
-    modal.id = 'betResultModal';
-    modal.innerHTML = `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(16,185,129,0.3);">
-                <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">🎉</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">축하합니다!</div>
-                <div style="font-size:1rem;color:#94a3b8;margin-bottom:0.5rem;">베팅에 성공하셨습니다!</div>
-                <div style="font-size:1.1rem;color:#10B981;font-weight:700;margin-bottom:1.75rem;">+${payout} RLO</div>
-                <button id="claimRewardBtn" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
-                    🏆 Claim Reward
-                </button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-
-    document.getElementById('claimRewardBtn').addEventListener('click', async () => {
-        modal.remove();
-        await this.claimReward(betAmount);
-    });
-}
-
-showLoseModal(betAmount, totalPool) {
-    const modal = document.createElement('div');
-    modal.id = 'betResultModal';
-    modal.innerHTML = `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-            <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);border:1px solid rgba(239,68,68,0.3);">
-                <div style="width:80px;height:80px;background:linear-gradient(135deg,#ef4444,#dc2626);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">😢</div>
-                <div style="font-size:1.4rem;font-weight:800;color:#fff;margin-bottom:0.75rem;">아쉽네요,</div>
-                <div style="font-size:1rem;color:#94a3b8;margin-bottom:1rem;">다시 도전해보실래요?</div>
-                <div style="background:rgba(255,255,255,0.05);border-radius:10px;padding:0.75rem;margin-bottom:1.75rem;">
-                    <div style="font-size:0.85rem;color:#64748b;margin-bottom:0.25rem;">Bet Pool</div>
-                    <div style="font-size:1.1rem;color:#fbbf24;font-weight:700;">${totalPool.toFixed(2)} RLO</div>
-                </div>
-                <button onclick="document.getElementById('betResultModal').remove()" style="width:100%;padding:0.85rem;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
-                    Close
-                </button>
-            </div>
-        </div>
-    `;
-    document.body.appendChild(modal);
-}
-
-async claimReward(betAmount) {
-    const payout = betAmount * 2;
-    const PAYOUT_SENDER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
-    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
-    const ERC20_ABI = [
-        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
-        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
-    ];
-
-    try {
-        if (window.walletConnector) await window.walletConnector.switchToMonad();
-
-        const provider = new window.ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const userAddress = await signer.getAddress();
-        const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
-        const decimals = await contract.decimals();
-        const payoutWei = window.ethers.utils.parseUnits(payout.toString(), decimals);
-
-        // 리워드 지갑에서 유저에게 전송 (리워드 지갑이 서명해야 하므로 백엔드 API 호출 필요)
-        // 현재는 프론트에서 처리 불가 → 백엔드 API로 요청
-        const response = await fetch('https://pkmon-payment-backend-api.onrender.com/api/payout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                to: userAddress,
-                amount: payout,
-                timestamp: Date.now()
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            this.log(`🎉 Reward claimed! ${payout} RLO sent. TX: ${data.txHash?.slice(0,10)}...`);
-
-            const successModal = document.createElement('div');
-            successModal.innerHTML = `
-                <div style="position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;display:flex;justify-content:center;align-items:center;">
-                    <div style="background:linear-gradient(135deg,#0f1729,#1a2744);border-radius:20px;padding:2.5rem 2rem;width:340px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
-                        <div style="width:80px;height:80px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1.5rem;font-size:2.5rem;">✅</div>
-                        <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.5rem;">Reward Sent!</div>
-                        <div style="color:#10B981;font-weight:700;font-size:1.1rem;margin-bottom:1.5rem;">${payout} RLO → Your Wallet</div>
-                        <button onclick="this.closest('div[style]').parentElement.remove()" style="width:100%;padding:0.85rem;background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">OK</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(successModal);
-        } else {
-            throw new Error('Payout API failed');
         }
-    } catch (error) {
-        console.error('[Claim] 실패:', error);
-        this.log(`❌ Claim failed: ${error.message}`);
-        alert('Claim failed. Please contact support.');
     }
-}
 
-// Betting
+    // Betting
     async placeBet(team, amount, token) {
         const MAX_BET = 10;
         if (this.gameState !== 'BETTING') {
             alert("Betting is closed! Battle is in progress.");
-        return;
+            return;
         }
 
-    const parsedAmount = parseFloat(amount);
-    if (parsedAmount > MAX_BET) return;
+        const parsedAmount = parseFloat(amount);
+        if (isNaN(parsedAmount) || parsedAmount <= 0) return;
+        if (parsedAmount > MAX_BET) {
+            alert(`Max bet is ${MAX_BET} RLO.`);
+            return;
+        }
 
-    // 온체인 RLO 전송
-    const BET_RECEIVER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
-    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
-    const ERC20_ABI = [
-        { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
-        { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
-    ];
+        // 온체인 RLO 전송
+        const BET_RECEIVER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
+        const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        const ERC20_ABI = [
+            { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
+            { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
+        ];
 
-    try {
-        if (window.walletConnector) await window.walletConnector.switchToMonad();
+        try {
+            if (window.walletConnector) await window.walletConnector.switchToMonad();
 
-        const provider = new window.ethers.providers.Web3Provider(window.ethereum);
-        const signer = provider.getSigner();
-        const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
-        const decimals = await contract.decimals();
-        const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), decimals);
+            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+            const decimals = await contract.decimals();
+            const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), decimals);
 
-        const tx = await contract.transfer(BET_RECEIVER, amountWei);
-        this.log(`⏳ Sending ${parsedAmount} RLO... TX: ${tx.hash.slice(0,10)}...`);
+            const tx = await contract.transfer(BET_RECEIVER, amountWei);
+            this.log(`⏳ Sending ${parsedAmount} RLO... TX: ${tx.hash.slice(0, 10)}...`);
 
-        await tx.wait();
-        this.log(`✅ Bet confirmed! ${parsedAmount} RLO on Team ${team}`);
+            await tx.wait();
+            this.log(`✅ Bet confirmed! ${parsedAmount} RLO on Team ${team}`);
 
-        this.bets[team] += parsedAmount;
-        this.userBets.push({ team, amount: parsedAmount, token, txHash: tx.hash });
-        this.updatePoolDisplay();
-        this.triggerChat('bet_placed', { team, amount: parsedAmount });
+            this.bets[team] += parsedAmount;
+            this.userBets.push({ team, amount: parsedAmount, token, txHash: tx.hash });
+            this.updatePoolDisplay();
+            this.triggerChat('bet_placed', { team, amount: parsedAmount });
+        } catch (error) {
+            console.error('[Bet] Failed to send:', error);
+            this.log(`❌ Bet failed: ${error.message}`);
+        }
     }
-    catch (error) {
-        console.error('[Bet] Failed to send:', error);
-        this.log(`❌ Bet failed: ${error.message}`);
+
+    updatePoolDisplay() {
+        const total = this.bets.A + this.bets.B;
+        this.elements.pool.textContent = total.toFixed(2);
     }
+
+    updateStatus(text) {
+        this.elements.status.textContent = text;
     }
-    
-    // Chat System (more active)
+
+    log(msg) {
+        const line = document.createElement('div');
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        this.elements.log.prepend(line);
+    }
+
+    // Chat System
     processChat() {
-        // More frequent idle chatter during betting (50% chance every 3 seconds)
         if (this.gameState === 'BETTING' && Math.random() > 0.5) {
             this.triggerChat('idle', {});
         }
-        // Commentary during battle (30% chance)
         if (this.gameState === 'BATTLING' && Math.random() > 0.7) {
             this.triggerChat('idle', {});
         }
@@ -623,7 +553,6 @@ async claimReward(betAmount) {
     triggerChat(event, context) {
         const trainer = TRAINERS[Math.floor(Math.random() * TRAINERS.length)];
         const msg = trainer.react(event, context);
-
         if (msg) {
             this.addChatMessage(trainer, msg);
         }
@@ -643,7 +572,6 @@ async claimReward(betAmount) {
         this.elements.chat.appendChild(div);
         this.elements.chat.scrollTop = this.elements.chat.scrollHeight;
 
-        // Limit chat history to prevent memory issues
         const entries = this.elements.chat.querySelectorAll('.chat-entry');
         if (entries.length > 50) {
             entries[0].remove();
