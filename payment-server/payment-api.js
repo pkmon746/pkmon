@@ -129,7 +129,7 @@ app.post('/api/record-payment', (req, res) => {
                 return res.status(500).json({ error: 'Database error' });
             }
 
-            console.log(`✅ 결제 기록됨: ${normalizedAddress} - ${amount} PKMON (TX: ${txHash.slice(0, 10)}...)`);
+            console.log(`✅ 결제 기록됨: ${normalizedAddress} - ${amount} RLO (TX: ${txHash.slice(0, 10)}...)`);
 
             res.json({
                 success: true,
@@ -229,7 +229,7 @@ app.post('/api/record-bet', (req, res) => {
         [address.toLowerCase(), team, amount, txHash || null, battle_id, timestamp || Date.now()],
         function(err) {
             if (err) return res.status(500).json({ error: 'Database error' });
-            console.log(`[Bet] Record: ${address} | Team ${team} | ${amount} PKMON`);
+            console.log(`[Bet] Record: ${address} | Team ${team} | ${amount} RLO`);
             res.json({ success: true });
         }
     );
@@ -291,7 +291,7 @@ app.post('/api/payout', async (req, res) => {
 
     const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY;
     const MONAD_RPC = process.env.MONAD_RPC || 'https://rpc.sepolia.org';
-    const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+    const TOKEN_ADDRESS = '0x340eC38B76eF2074bfFC028c490941b8e34f9eb0';
     const ERC20_ABI = [
         { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
         { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
@@ -335,7 +335,7 @@ app.post('/api/payout', async (req, res) => {
         
         const receipt = await tx.wait();
         
-        console.log(`[Payout] ✅ Complete! ${amount} PKMON → ${to} | TX: ${tx.hash}`);
+        console.log(`[Payout] ✅ Complete! ${amount} RLO → ${to} | TX: ${tx.hash}`);
         console.log('[Payout] Gas used:', receipt.gasUsed.toString());
         
         res.json({ 
