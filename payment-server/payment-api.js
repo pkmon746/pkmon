@@ -290,7 +290,7 @@ app.post('/api/payout', async (req, res) => {
     }
 
     const PAYOUT_PRIVATE_KEY = process.env.PAYOUT_PRIVATE_KEY;
-    const MONAD_RPC = process.env.MONAD_RPC || 'https://rpc2.monad.xyz';
+    const MONAD_RPC = process.env.MONAD_RPC || 'https://rpc.sepolia.org';
     const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
     const ERC20_ABI = [
         { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
