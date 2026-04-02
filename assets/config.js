@@ -26,7 +26,7 @@ const API_CONFIG = {
   GEMINI_API_KEY: 'AIzaSyCArAp1oZkyyowrp7253eABFrMUXTcjUfg',
 
   // External Links
-  HOW_TO_BUY: 'https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777',
+  HOW_TO_BUY: 'https://nad.fun/tokens/0x340eC38B76eF2074bfFC028c490941b8e34f9eb0',
   TWITTER: 'https://x.com/pkmonad',
   TELEGRAM: 'https://t.me/pkmonad'
 };
