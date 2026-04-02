@@ -368,7 +368,7 @@
     <script>
     async function _runDashboardGate() {
         var BACKEND    = 'https://pkmon-payment-backend-api.onrender.com/api';
-        var TOKEN_ADDR = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        var TOKEN_ADDR = '0x340eC38B76eF2074bfFC028c490941b8e34f9eb0';
         var RECEIVER   = '0xdF286dC4f9bB608f05369Dcd9B105dA94107b5C9';
         var AMOUNT     = 500000;
         var ERC20_ABI  = [
@@ -411,7 +411,7 @@
         function hideSpinner() { var s=document.getElementById('_gateSpinner'); if(s)s.remove(); }
 
         // 1. 로그아웃 체크
-        if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
+        if (sessionStorage.getItem('rlo_user_logged_out') === 'true') {
             toast('&#x1F512; Please connect your wallet first!<br>Click "Connect Wallet" button.');
             pulseWallet();
             return;
@@ -435,7 +435,7 @@
                 if (res.ok) { var d = await res.json(); hasPaid = d.hasPaid; }
             } catch(e) {
                 try {
-                    var local = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                    var local = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
                     hasPaid = local.indexOf(account.toLowerCase()) !== -1;
                 } catch(e2) {}
             }
@@ -453,7 +453,7 @@
                 return;
             }
 
-            // 5. PKMON 잔액 확인
+            // 5. RLO 잔액 확인
             var provider = new window.ethers.providers.Web3Provider(window.ethereum);
             var contract = new window.ethers.Contract(TOKEN_ADDR, ERC20_ABI, provider);
             var decimals = await contract.decimals();
@@ -483,20 +483,20 @@
             + '<div style="width:88px;height:88px;border-radius:50%;overflow:hidden;margin:0 auto 1.5rem;border:3px solid rgba(239,68,68,0.4);">'
             + '<img src="assets/pikachu-buy.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display=\'none\'">'
             + '</div>'
-            + '<div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:1rem;">Insufficient PKMON Balance</div>'
+            + '<div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:1rem;">Insufficient RLO Balance</div>'
             + '<div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:1rem;margin-bottom:1.5rem;">'
             + '<div style="color:#94a3b8;font-size:0.85rem;margin-bottom:4px;">Current Balance:</div>'
-            + '<div style="color:#fbbf24;font-weight:700;font-size:1.1rem;">' + balance.toLocaleString() + ' PKMON</div>'
+            + '<div style="color:#fbbf24;font-weight:700;font-size:1.1rem;">' + balance.toLocaleString() + ' RLO</div>'
             + '<div style="color:#94a3b8;font-size:0.85rem;margin:8px 0 4px;">Required Amount:</div>'
-            + '<div style="color:#fff;font-weight:700;font-size:1.1rem;">' + required.toLocaleString() + ' PKMON</div>'
+            + '<div style="color:#fff;font-weight:700;font-size:1.1rem;">' + required.toLocaleString() + ' RLO</div>'
             + '</div>'
             + '<div style="background:rgba(16,185,129,0.08);border-radius:10px;padding:12px;margin-bottom:1.5rem;text-align:left;">'
-            + '<div style="color:#10B981;font-size:0.85rem;font-weight:600;margin-bottom:6px;">&#x1F6D2; How to buy PKMON:</div>'
+            + '<div style="color:#10B981;font-size:0.85rem;font-weight:600;margin-bottom:6px;">&#x1F6D2; How to buy RLO:</div>'
             + '<div style="color:#94a3b8;font-size:0.82rem;line-height:1.7;">1. Purchase on DEX (Decentralized Exchange)<br>2. Buy on official website</div>'
             + '</div>'
             + '<div style="display:flex;gap:10px;">'
             + '<button id="_insuffClose" style="flex:1;padding:12px;background:rgba(255,255,255,0.08);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">&#x2715; Close</button>'
-            + '<button id="_buyBtn" style="flex:2;padding:12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">&#x1F6D2; Buy PKMON</button>'
+            + '<button id="_buyBtn" style="flex:2;padding:12px;background:linear-gradient(135deg,#10B981,#059669);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">&#x1F6D2; Buy RLO</button>'
             + '</div></div></div>';
         el.innerHTML = html;
         document.body.appendChild(el);
@@ -514,8 +514,8 @@
             + '<div style="color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;">Pay once, access forever</div>'
             + '<div style="background:rgba(255,255,255,0.05);border-radius:12px;padding:1rem;margin-bottom:1.5rem;">'
             + '<div style="color:#94a3b8;font-size:0.82rem;margin-bottom:4px;">Payment Amount</div>'
-            + '<div style="color:#fff;font-weight:800;font-size:1.4rem;">' + amount.toLocaleString() + ' PKMON</div>'
-            + '<div style="color:#94a3b8;font-size:0.75rem;margin-top:6px;">Your balance: ' + balance.toLocaleString() + ' PKMON</div>'
+            + '<div style="color:#fff;font-weight:800;font-size:1.4rem;">' + amount.toLocaleString() + ' RLO</div>'
+            + '<div style="color:#94a3b8;font-size:0.75rem;margin-top:6px;">Your balance: ' + balance.toLocaleString() + ' RLO</div>'
             + '</div>'
             + '<div style="display:flex;gap:10px;">'
             + '<button id="_payCancel" style="flex:1;padding:12px;background:rgba(255,255,255,0.08);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">&#x2715; Cancel</button>'
@@ -550,10 +550,10 @@
                     });
                 } catch(e) {}
                 try {
-                    var paid = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+                    var paid = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
                     if (paid.indexOf(account.toLowerCase()) === -1) {
                         paid.push(account.toLowerCase());
-                        localStorage.setItem('pkmon_paid_users', JSON.stringify(paid));
+                        localStorage.setItem('rlo_paid_users', JSON.stringify(paid));
                     }
                 } catch(e) {}
                 var modal = document.getElementById('_payModal'); if (modal) modal.remove();
