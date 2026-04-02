@@ -111,7 +111,7 @@ class BattleEngine {
         if (Math.random() > 0.7) {
             const teamColor = randomTeam === 'A' ? 'var(--accent-blue)' : '#EF4444';
             const logEntry = document.createElement('div');
-            logEntry.innerHTML = `<span style="color: #bbb">${randomUser}</span> bet <span style="color: var(--accent-yellow)">${amount} PKMON</span> on <span style="color: ${teamColor}">Team ${randomTeam}</span>`;
+            logEntry.innerHTML = `<span style="color: #bbb">${randomUser}</span> bet <span style="color: var(--accent-yellow)">${amount} RLO</span> on <span style="color: ${teamColor}">Team ${randomTeam}</span>`;
             logEntry.style.fontSize = '0.8rem';
             logEntry.style.padding = '2px 0';
             logEntry.style.opacity = '0.8';
@@ -494,7 +494,7 @@ class BattleEngine {
 
         // 온체인 RLO 전송
         const BET_RECEIVER = '0x2e06710f034190A1d6419Ed56A41b2Da82B3a922';
-        const TOKEN_ADDRESS = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        const TOKEN_ADDRESS = '0x340eC38B76eF2074bfFC028c490941b8e34f9eb0';
         const ERC20_ABI = [
             { "constant": true, "inputs": [], "name": "decimals", "outputs": [{ "name": "", "type": "uint8" }], "type": "function" },
             { "constant": false, "inputs": [{ "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" }], "name": "transfer", "outputs": [{ "name": "", "type": "bool" }], "type": "function" }
