@@ -1,8 +1,8 @@
 // API Configuration
 const API_CONFIG = {
-  // Monad Blockchain
-  MONAD_RPC_URL: 'https://rpc2.monad.xyz',
-  MONAD_CHAIN_ID: 143,
+  // Sepolia Testnet
+  MONAD_RPC_URL: 'https://rpc.sepolia.org',
+  MONAD_CHAIN_ID: 11155111,
 
   // Pokémon APIs
   POKEMON_API: 'https://pokeapi.co/api/v2',
