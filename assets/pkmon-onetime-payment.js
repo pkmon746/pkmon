@@ -216,7 +216,7 @@ class PKMONOneTimePayment {
     async checkPKMONBalance(userAddress) {
        try {
            // ✅ 사용자의 지갑 설정과 상관없이 모나드 네트워크에서 직접 잔액 조회
-           const rpcUrl = 'https://rpc2.monad.xyz'; // 모나드 메인넷 RPC (필요시 변경)
+           const rpcUrl = 'https://rpc.sepolia.org'; // Sepolia 테스트넷 RPC
            const provider = new window.ethers.providers.JsonRpcProvider(rpcUrl);
 
            const contract = new window.ethers.Contract(
@@ -249,7 +249,7 @@ class PKMONOneTimePayment {
         try {
             // ✅ [추가] 결제 진행 전 네트워크가 모나드인지 확인하고 전환 유도
             if (window.walletConnector) {
-                await window.walletConnector.switchToMonad();
+                await window.walletConnector.switchToSepolia();
             }
 
             const provider = new window.ethers.providers.Web3Provider(window.ethereum);
