@@ -5,16 +5,16 @@
 // 미결제 지갑 → 결제 확인 모달 → 지갑 승인
 // ============================================================
 
-class PKMONOneTimePayment {
+class RLOOneTimePayment {
     constructor() {
         // ✅ PKMON 토큰 컨트랙트 주소 (Monad Testnet)
-        this.tokenAddress = '0x39D691612Ef8B4B884b0aA058f41C93d6B527777';
+        this.tokenAddress = '0x340eC38B76eF2074bfFC028c490941b8e34f9eb0';
 
         // ✅ 결제 수신 지갑 주소 - 밈코인 DEV 지갑
         this.receiverAddress = '0xdF286dC4f9bB608f05369Dcd9B105dA94107b5C9'; // TODO: 실제 밈코인 DEV 지갑 주소로 변경
 
-        // 결제 금액 - 500,000 PKMON (수정됨)
-        this.paymentAmount = 500000;
+        // 결제 금액 - 500,000 RLO (수정됨)
+        this.paymentAmount = 50;
 
         // 🔧 Backend API URL - 실제 서버 주소로 변경
         this.apiUrl = 'https://pkmon-payment-backend-api.onrender.com/api'; // ✅ Render.com 배포 URL // TODO: 실제 백엔드 서버 주소로 변경
@@ -103,7 +103,7 @@ class PKMONOneTimePayment {
     // 로컬스토리지 확인 (폴백)
     checkPaymentHistoryLocal(userAddress) {
         try {
-            const paidUsers = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+            const paidUsers = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
             return paidUsers.includes(userAddress.toLowerCase());
         } catch (error) {
             return false;
@@ -113,11 +113,11 @@ class PKMONOneTimePayment {
     // 로컬스토리지 저장
     savePaymentHistoryLocal(userAddress) {
         try {
-            const paidUsers = JSON.parse(localStorage.getItem('pkmon_paid_users') || '[]');
+            const paidUsers = JSON.parse(localStorage.getItem('rlo_paid_users') || '[]');
             const addr = userAddress.toLowerCase();
             if (!paidUsers.includes(addr)) {
                 paidUsers.push(addr);
-                localStorage.setItem('pkmon_paid_users', JSON.stringify(paidUsers));
+                localStorage.setItem('rlo_paid_users', JSON.stringify(paidUsers));
             }
         } catch (error) {
             console.error('Error saving to localStorage:', error);
@@ -156,11 +156,11 @@ class PKMONOneTimePayment {
     // 페이지 로드 시 자동 실행
     // ─────────────────────────────────────────
     async checkAccess() {
-        console.log('[PKMON] 결제 시스템 초기화 완료 (0.1 PKMON)');
+        console.log('[RLO] 결제 시스템 초기화 완료 (RLO)');
 
         // ✅ FIX: 사이트에서 명시적으로 로그아웃한 상태면 아무것도 하지 않음
         // Rabby/MetaMask가 배경에서 계정을 노출해도 무시
-        if (sessionStorage.getItem('pkmon_user_logged_out') === 'true') {
+        if (sessionStorage.getItem('rlo_user_logged_out') === 'true') {
             console.log('[Payment] 로그아웃 상태 - checkAccess 중단');
             return;
         }
@@ -190,11 +190,11 @@ class PKMONOneTimePayment {
                 return;
             }
 
-            // PKMON 잔액 확인
-            const balance = await this.checkPKMONBalance(userAddress);
+            // RLO 잔액 확인
+            const balance = await this.checkRLOBalance(userAddress);
             const balanceFormatted = parseFloat(balance).toFixed(2);
 
-            console.log(`[Payment] PKMON 잔액: ${balanceFormatted}`);
+            console.log(`[Payment] RLO 잔액: ${balanceFormatted}`);
 
             if (parseFloat(balance) < this.paymentAmount) {
                 console.log('[Payment] ⚠️ 잔액 부족');
@@ -210,10 +210,10 @@ class PKMONOneTimePayment {
     }
 
     // ─────────────────────────────────────────
-    // PKMON 잔액 확인
+    // RLO 잔액 확인
     // ─────────────────────────────────────────
     // pkmon-onetime-payment.js 내 수정 부분
-    async checkPKMONBalance(userAddress) {
+    async checkRLOBalance(userAddress) {
        try {
            // ✅ 사용자의 지갑 설정과 상관없이 모나드 네트워크에서 직접 잔액 조회
            const rpcUrl = 'https://rpc.sepolia.org'; // Sepolia 테스트넷 RPC
@@ -264,7 +264,7 @@ class PKMONOneTimePayment {
             const decimals = await contract.decimals();
             const amount = window.ethers.utils.parseUnits(this.paymentAmount.toString(), decimals);
 
-            console.log(`[Payment] 결제 진행: ${this.paymentAmount} PKMON → ${this.receiverAddress}`);
+            console.log(`[Payment] 결제 진행: ${this.paymentAmount} RLO → ${this.receiverAddress}`);
 
             const tx = await contract.transfer(this.receiverAddress, amount);
             console.log('[Payment] 트랜잭션 전송:', tx.hash);
@@ -294,7 +294,7 @@ class PKMONOneTimePayment {
 
     showPaymentModal(balance, userAddress) {
         const modal = document.createElement('div');
-        modal.id = 'pkmonPaymentModal';
+        modal.id = 'rloPaymentModal';
         modal.innerHTML = `
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1);">
@@ -309,11 +309,11 @@ class PKMONOneTimePayment {
                     <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; margin-bottom: 25px;">
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                             <span style="color: #cbd5e1;">Payment Amount:</span>
-                            <span style="color: white; font-weight: bold; font-size: 20px;">${this.formatNumber(this.paymentAmount)} PKMON</span>
+                            <span style="color: white; font-weight: bold; font-size: 20px;">${this.formatNumber(this.paymentAmount)} RLO</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                             <span style="color: #cbd5e1;">Your Balance:</span>
-                            <span style="color: #10B981; font-weight: bold;">${this.formatNumber(parseFloat(balance).toFixed(2))} PKMON</span>
+                            <span style="color: #10B981; font-weight: bold;">${this.formatNumber(parseFloat(balance).toFixed(2))} RLO</span>
                         </div>
                         <div style="height: 1px; background: rgba(255,255,255,0.1); margin: 15px 0;"></div>
                         <div style="display: flex; justify-content: space-between;">
@@ -354,24 +354,24 @@ class PKMONOneTimePayment {
 
     showInsufficientBalanceModal(balance) {
         const modal = document.createElement('div');
-        modal.id = 'pkmonInsufficientModal';
+        modal.id = 'rloInsufficientModal';
         modal.innerHTML = `
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 500px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.1);">
                     <div style="text-align: center;">
                         <div style="width: 120px; height: 120px; margin: 0 auto 20px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #10B981 0%, #059669 100%);">
-                            <img src="assets/pikachu-buy.jpg" alt="Let's buy PKMON" style="width: 100%; height: 100%; object-fit: cover;">
+                            <img src="assets/pikachu-buy.jpg" alt="Let's buy RLO" style="width: 100%; height: 100%; object-fit: cover;">
                         </div>
-                        <h2 style="color: white; margin: 0 0 15px 0;">Insufficient PKMON Balance</h2>
+                        <h2 style="color: white; margin: 0 0 15px 0;">Insufficient RLO Balance</h2>
                         <p style="color: #94a3b8; margin-bottom: 25px;">
-                            Current Balance: <strong style="color: #f59e0b;">${this.formatNumber(parseFloat(balance).toFixed(2))} PKMON</strong><br>
-                            Required Amount: <strong style="color: white;">${this.formatNumber(this.paymentAmount)} PKMON</strong>
+                            Current Balance: <strong style="color: #f59e0b;">${this.formatNumber(parseFloat(balance).toFixed(2))} RLO</strong><br>
+                            Required Amount: <strong style="color: white;">${this.formatNumber(this.paymentAmount)} RLO</strong>
                         </p>
                         
                         <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 12px; margin-bottom: 25px; text-align: left;">
                             <p style="color: #cbd5e1; margin: 0 0 10px 0; font-size: 14px;">
                                 <i class="fas fa-shopping-cart" style="color: #10B981; margin-right: 8px;"></i>
-                                How to buy PKMON tokens:
+                                How to buy RLO tokens:
                             </p>
                             <ol style="color: #94a3b8; margin: 0; padding-left: 20px; font-size: 13px; line-height: 1.8;">
                                 <li>Purchase on DEX (Decentralized Exchange)</li>
@@ -380,11 +380,11 @@ class PKMONOneTimePayment {
                         </div>
                         
                         <div style="display: flex; gap: 12px;">
-                            <button onclick="this.closest('#pkmonInsufficientModal').remove()" style="flex: 1; padding: 14px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s;">
+                            <button onclick="this.closest('#rloInsufficientModal').remove()" style="flex: 1; padding: 14px; background: rgba(255,255,255,0.1); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s;">
                                 <i class="fas fa-times"></i> Close
                             </button>
-                            <button onclick="window.open('https://nad.fun/tokens/0x39D691612Ef8B4B884b0aA058f41C93d6B527777', '_blank')" style="flex: 2; padding: 14px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
-                                <i class="fas fa-shopping-cart"></i> Buy PKMON
+                            <button onclick="window.open('https://nad.fun/tokens/0x340eC38B76eF2074bfFC028c490941b8e34f9eb0', '_blank')" style="flex: 2; padding: 14px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);">
+                                <i class="fas fa-shopping-cart"></i> Buy RLO
                             </button>
                         </div>
                     </div>
@@ -397,7 +397,7 @@ class PKMONOneTimePayment {
 
     showProcessingModal(txHash) {
         const modal = document.createElement('div');
-        modal.id = 'pkmonProcessingModal';
+        modal.id = 'rloProcessingModal';
         modal.innerHTML = `
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center;">
@@ -420,9 +420,9 @@ class PKMONOneTimePayment {
     }
 
     showSuccessModal(txHash, targetUrl = null) {
-        document.getElementById('pkmonProcessingModal')?.remove();
+        document.getElementById('rloProcessingModal')?.remove();
         // ✅ BUG3 FIX: 결제 성공 후 이동할 URL 설정
-        window.__pkmonSuccessRedirect = () => {
+        window.__rloSuccessRedirect = () => {
             if (targetUrl) {
                 window.location.href = targetUrl;
             } else {
@@ -436,7 +436,7 @@ class PKMONOneTimePayment {
         }, 3000);
 
         const modal = document.createElement('div');
-        modal.id = 'pkmonSuccessModal';
+        modal.id = 'rloSuccessModal';
         modal.innerHTML = `
             <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center;">
                 <div style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 20px; max-width: 450px; width: 90%; text-align: center;">
@@ -448,7 +448,7 @@ class PKMONOneTimePayment {
                     <p style="color: #60a5fa; font-size: 11px; font-family: monospace; word-break: break-all; margin-bottom: 25px;">
                         TX: ${txHash}
                     </p>
-                    <button onclick="window.__pkmonSuccessRedirect && window.__pkmonSuccessRedirect()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;">
+                    <button onclick="window.__rloSuccessRedirect && window.__rloSuccessRedirect()" style="width: 100%; padding: 16px; background: linear-gradient(135deg, #10B981 0%, #059669 100%); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer;">
                         Get Started
                     </button>
                 </div>
@@ -459,7 +459,7 @@ class PKMONOneTimePayment {
     }
 
     showErrorModal(errorMessage) {
-        document.getElementById('pkmonProcessingModal')?.remove();
+        document.getElementById('rloProcessingModal')?.remove();
 
         const modal = document.createElement('div');
         modal.innerHTML = `
@@ -537,17 +537,17 @@ class PKMONOneTimePayment {
 window.addEventListener('DOMContentLoaded', async () => {
     // Ethers.js 로드 확인
     if (typeof window.ethers === 'undefined') {
-        console.error('[PKMON] Ethers.js가 로드되지 않았습니다');
+        console.error('[RLO] Ethers.js가 로드되지 않았습니다');
         return;
     }
 
-    const paymentSystem = new PKMONOneTimePayment();
-    window.pkmonPayment = paymentSystem;
+    const paymentSystem = new RLOOneTimePayment();
+    window.rloPayment = paymentSystem;
 
     // ✅ FIX: 페이지 로드 시 자동 checkAccess() 완전 제거
     // → 반드시 사용자가 직접 START / Get Started 버튼을 눌러야만 게이트 작동
     // → accountsChanged 이벤트도 제거 (Rabby 자동 감지 차단)
-    console.log('[PKMON] 결제 시스템 대기 중 (수동 트리거 필요)');
+    console.log('[RLO] 결제 시스템 대기 중 (수동 트리거 필요)');
 });
 
 
