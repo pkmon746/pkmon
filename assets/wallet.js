@@ -5,7 +5,7 @@ class WalletConnector {
     constructor() {
         this.currentAccount = '0xDEMO0000000000000000000000000000DEMO'; // 시연용 더미 주소
         this.provider = null;
-        this.chainId = 143;
+        this.chainId = 11155111;
         this.LOGOUT_FLAG = 'pkmon_user_logged_out';
         
         console.log('[DEMO MODE] 🎭 Wallet 시연 모드 - 모든 체크 비활성화');
@@ -32,8 +32,8 @@ class WalletConnector {
         console.log('[DEMO MODE] connectWallet 호출 - 무시됨');
     }
 
-    async switchToMonad() {
-        console.log('[DEMO MODE] switchToMonad 호출 - 무시됨');
+    async switchToSepolia() {
+        console.log('[DEMO MODE] switchToSepolia 호출 - 무시됨');
     }
 
     updateUI() {
