@@ -441,7 +441,7 @@ class BattleEngine {
     async claimReward(betAmount) {
         const payout = betAmount * 2;
         try {
-            if (window.walletConnector) await window.walletConnector.switchToMonad();
+            if (window.walletConnector) await window.walletConnector.switchToSepolia();
             const provider = new window.ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
             const userAddress = await signer.getAddress();
@@ -501,7 +501,7 @@ class BattleEngine {
         ];
 
         try {
-            if (window.walletConnector) await window.walletConnector.switchToMonad();
+            if (window.walletConnector) await window.walletConnector.switchToSepolia();
 
             const provider = new window.ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
