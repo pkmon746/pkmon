@@ -4,13 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pokédex - PKMON</title>
+    <title>Pokémon TCG Search - PKMON</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- React & Babel CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 
 <body>
-    <!-- Navigation (same as index.html) -->
+    <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <a href="index.html" class="nav-logo">
@@ -24,9 +28,9 @@
                         Pokédex <i class="fas fa-chevron-down" style="font-size: 0.7rem;"></i>
                     </a>
                     <div class="dropdown-menu">
-                        <a href="javascript:void(0);" onclick="handleProtectedLink('pokedex.html')" class="dropdown-item">Pokédex</a>
-                        <a href="javascript:void(0);" onclick="handleProtectedLink('tcg-search.html')" class="dropdown-item">Poké TCG</a>
-                        <a href="javascript:void(0);" onclick="handleProtectedLink('pokememe.html')" class="dropdown-item">PokéMeme</a>
+                        <a href="pokedex.html" class="dropdown-item">Pokédex</a>
+                        <a href="tcg-search.html" class="dropdown-item">Poké TCG</a>
+                        <a href="pokememe.html" class="dropdown-item">PokéMeme</a>
                     </div>
                 </li>
                 <li class="nav-item">
@@ -42,7 +46,7 @@
                     <div class="dropdown-menu">
                         <a href="https://www.renaiss.xyz/" target="_blank"
                             class="dropdown-item">Linked site</a>
-                        <a href="javascript:void(0);" onclick="handleProtectedLink('utility.html')" class="dropdown-item">Utility</a>
+                        <a href="utility.html" class="dropdown-item">Utility</a>
                         <a href="#" class="dropdown-item" style="opacity: 0.6; cursor: not-allowed;">
                             Coming soon <span style="font-size: 0.6rem; vertical-align: middle;">⏳</span>
                         </a>
@@ -58,7 +62,7 @@
                     </div>
                 </li>
                 <li class="nav-item">
-                    <a href="javascript:void(0);" onclick="handleProtectedLink('agent-dashboard.html')" class="nav-link btn-start">START</a>
+                    <a href="agent-dashboard.html" class="nav-link btn-start">START</a>
                 </li>
                 <li class="nav-item">
                     <button class="btn-wallet" id="connectWalletBtn">
@@ -69,363 +73,660 @@
         </div>
     </nav>
 
-    <!-- Pokédex Section -->
-    <section class="section" style="padding-top: calc(var(--nav-height) + 3rem);">
-        <div class="container">
-            <div class="page-header fade-in">
-                <h1>Pokédex</h1>
-                <p>Complete Pokémon database with detailed information and stats.</p>
-            </div>
+    <div id="root"></div>
 
-            <!-- Search Bar -->
-            <div class="search-container fade-in">
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="pokemonSearch" placeholder="Search Pokémon name (English only)">
-                    <button class="btn-search" onclick="searchPokemon()">Search</button>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const LANG_CONFIG = {
+            en: { label: "🇺🇸 English", flag: "🇺🇸", color: "#3B82F6" },
+            ja: { label: "🇯🇵 Japanese", flag: "🇯🇵", color: "#EF4444" },
+        };
+
+        const BASE_URL = "https://api.tcgdex.net/v2";
+
+        const rarityColors = {
+            "Common": "#9CA3AF",
+            "Uncommon": "#22C55E",
+            "Rare": "#3B82F6",
+            "Rare Holo": "#8B5CF6",
+            "Rare Holo EX": "#EC4899",
+            "Ultra Rare": "#F97316",
+            "Secret Rare": "#EAB308",
+            "Amazing Rare": "#14B8A6",
+            "Promo": "#6366F1",
+        };
+
+        function getRarityColor(rarity) {
+            if (!rarity) return "#6B7280";
+            for (const [key, color] of Object.entries(rarityColors)) {
+                if (rarity.toLowerCase().includes(key.toLowerCase())) return color;
+            }
+            return "#6B7280";
+        }
+
+        function CardSkeleton() {
+            return (
+                <div style={{
+                    background: "rgba(255,255,255,0.04)",
+                    borderRadius: 16,
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    animation: "pulse 1.5s ease-in-out infinite"
+                }}>
+                    <div style={{ height: 200, background: "rgba(255,255,255,0.06)" }} />
+                    <div style={{ padding: 16 }}>
+                        <div style={{ height: 16, background: "rgba(255,255,255,0.06)", borderRadius: 4, marginBottom: 8 }} />
+                        <div style={{ height: 12, background: "rgba(255,255,255,0.04)", borderRadius: 4, width: "70%" }} />
+                    </div>
                 </div>
-                <p class="search-hint">Examples: pikachu, charizard, gengar</p>
-            </div>
-
-            <!-- Pokemon Display -->
-            <div id="pokemonResult"></div>
-
-            <!-- Popular Pokemon Grid -->
-            <div class="pokemon-grid" id="pokemonGrid"></div>
-        </div>
-    </section>
-
-    <style>
-        .page-header {
-            text-align: center;
-            margin-bottom: 3rem;
+            );
         }
 
-        .page-header h1 {
-            font-size: 3.5rem;
-            margin-bottom: 1rem;
-            background: linear-gradient(135deg, #FFFFFF, var(--secondary-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .page-header p {
-            font-size: 1.2rem;
-            color: var(--text-secondary);
-        }
-
-        .search-container {
-            max-width: 700px;
-            margin: 0 auto 4rem;
-        }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            background: var(--glass-bg);
-            border: 2px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 0.5rem 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .search-box:focus-within {
-            border-color: var(--primary-purple);
-            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
-        }
-
-        .search-box i {
-            color: var(--text-muted);
-            font-size: 1.2rem;
-        }
-
-        .search-box input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 0.75rem 0;
-            color: var(--text-primary);
-            font-size: 1rem;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            box-shadow: none;
-        }
-
-        .btn-search {
-            padding: 0.75rem 2rem;
-            background: linear-gradient(135deg, var(--primary-purple), var(--secondary-purple));
-            color: white;
-            border-radius: 10px;
-            font-weight: 600;
-        }
-
-        .search-hint {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-top: 0.75rem;
-        }
-
-        .pokemon-card {
-            background: var(--bg-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 20px;
-            padding: 2rem;
-            text-align: center;
-            max-width: 800px;
-            margin: 0 auto 3rem;
-            transition: all 0.3s ease;
-        }
-
-        .pokemon-card:hover {
-            border-color: var(--primary-purple);
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-purple);
-        }
-
-        .pokemon-card img {
-            width: 200px;
-            height: 200px;
-            margin-bottom: 1.5rem;
-        }
-
-        .pokemon-name {
-            font-size: 2.5rem;
-            font-weight: 800;
-            margin-bottom: 1rem;
-            text-transform: capitalize;
-        }
-
-        .pokemon-types {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .type-badge {
-            padding: 0.5rem 1.5rem;
-            border-radius: 50px;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-        }
-
-        .pokemon-stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--secondary-purple);
-        }
-
-        .pokemon-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 2rem;
-        }
-
-        .grid-card {
-            background: var(--bg-card);
-            border: 1px solid var(--glass-border);
-            border-radius: 16px;
-            padding: 1.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .grid-card:hover {
-            border-color: var(--primary-purple);
-            transform: translateY(-5px);
-        }
-
-        .grid-card img {
-            width: 120px;
-            height: 120px;
-        }
-
-        .grid-card h3 {
-            margin-top: 1rem;
-            text-transform: capitalize;
-            font-size: 1.2rem;
-        }
-    </style>
-
-    <script>
-        // Pokemon API Integration
-        const POKEMON_API = 'https://pokeapi.co/api/v2';
-
-        async function searchPokemon() {
-            const input = document.getElementById('pokemonSearch').value.toLowerCase().trim();
-
-            if (!input) {
-                alert('Please enter a Pokémon name');
-                return;
-            }
-
-            try {
-                // Fetch basic Pokemon data
-                const response = await fetch(`${POKEMON_API}/pokemon/${input}`);
-                if (!response.ok) throw new Error('Pokémon not found');
-                const data = await response.json();
-
-                // Fetch Pokemon Species data (for description and genus)
-                const speciesResponse = await fetch(`${POKEMON_API}/pokemon-species/${data.id}`); // Use ID for accuracy
-                let speciesData = null;
-                if (speciesResponse.ok) {
-                    speciesData = await speciesResponse.json();
-                }
-
-                displayPokemon(data, speciesData);
-            } catch (error) {
-                document.getElementById('pokemonResult').innerHTML = `
-                    <div class="pokemon-card" style="background: rgba(239, 68, 68, 0.1); border-color: #EF4444;">
-                        <h2 style="color: #EF4444;">Pokémon not found!</h2>
-                        <p style="color: var(--text-secondary);">Please check the spelling and try again.</p>
-                    </div>
-                `;
-            }
-        }
-
-        function displayPokemon(data, speciesData) {
-            const types = data.types.map(t => t.type.name);
-            const typeColors = {
-                normal: '#A8A878', fire: '#F08030', water: '#6890F0',
-                electric: '#F8D030', grass: '#78C850', ice: '#98D8D8',
-                fighting: '#C03028', poison: '#A040A0', ground: '#E0C068',
-                flying: '#A890F0', psychic: '#F85888', bug: '#A8B820',
-                rock: '#B8A038', ghost: '#705898', dragon: '#7038F8',
-                dark: '#705848', steel: '#B8B8D0', fairy: '#EE99AC'
-            };
-
-            // Extract description (flavor text)
-            let description = "No description available.";
-            let genus = "";
-
-            if (speciesData) {
-                // Find first English flavor text
-                const flavorEntry = speciesData.flavor_text_entries.find(entry => entry.language.name === 'en');
-                if (flavorEntry) {
-                    // Clean up text (replace form feeds and newlines with spaces)
-                    description = flavorEntry.flavor_text.replace(/[\f\n\r]/g, ' ');
-                }
-
-                // Find English genus (e.g., "Seed Pokémon")
-                const genusEntry = speciesData.genera.find(entry => entry.language.name === 'en');
-                if (genusEntry) {
-                    genus = genusEntry.genus;
-                }
-            }
-
-            const html = `
-                <div class="pokemon-card fade-in">
-                    <img src="${data.sprites.other['official-artwork'].front_default}" alt="${data.name}">
-                    <h2 class="pokemon-name">${data.name}</h2>
-                    ${genus ? `<div style="color: var(--text-secondary); margin-bottom: 1rem; font-style: italic;">${genus}</div>` : ''}
-                    
-                    <div class="pokemon-types">
-                        ${types.map(type => `
-                            <span class="type-badge" style="background: ${typeColors[type]};">${type}</span>
-                        `).join('')}
-                    </div>
-                    
-                    <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; margin: 1.5rem 0; line-height: 1.6; color: #ddd; border-left: 3px solid var(--primary-purple);">
-                        "${description}"
-                    </div>
-                    
-                    <div class="pokemon-stats">
-                        <div class="stat-item">
-                            <div class="stat-label">Height</div>
-                            <div class="stat-value">${data.height / 10}m</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Weight</div>
-                            <div class="stat-value">${data.weight / 10}kg</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-label">Base Experience</div>
-                            <div class="stat-value">${data.base_experience}</div>
-                        </div>
-                        ${data.stats.map(stat => `
-                            <div class="stat-item">
-                                <div class="stat-label">${stat.stat.name}</div>
-                                <div class="stat-value">${stat.base_stat}</div>
+        function CardModal({ card, onClose, lang }) {
+            if (!card) return null;
+            return (
+                <div
+                    onClick={onClose}
+                    style={{
+                        position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
+                        zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center",
+                        padding: 24, backdropFilter: "blur(8px)"
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+                            borderRadius: 24, maxWidth: 520, width: "100%",
+                            border: "1px solid rgba(255,255,255,0.15)",
+                            boxShadow: "0 25px 80px rgba(0,0,0,0.8)",
+                            overflow: "hidden",
+                            animation: "modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1)"
+                        }}
+                    >
+                        <div style={{ display: "flex", gap: 24, padding: 28, flexWrap: "wrap" }}>
+                            <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                                {card.image ? (
+                                    <img
+                                        src={`${card.image}/high.webp`}
+                                        alt={card.name}
+                                        style={{
+                                            width: 200, borderRadius: 12,
+                                            boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+                                            transition: "transform 0.3s ease"
+                                        }}
+                                        onError={e => { e.target.style.display = "none"; }}
+                                    />
+                                ) : (
+                                    <div style={{
+                                        width: 200, height: 280, borderRadius: 12,
+                                        background: "rgba(255,255,255,0.06)",
+                                        display: "flex", alignItems: "center", justifyContent: "center",
+                                        fontSize: 48
+                                    }}>🃏</div>
+                                )}
+                                <span style={{
+                                    padding: "4px 12px", borderRadius: 20,
+                                    background: getRarityColor(card.rarity) + "33",
+                                    color: getRarityColor(card.rarity),
+                                    fontSize: 12, fontWeight: 700, letterSpacing: 1,
+                                    border: `1px solid ${getRarityColor(card.rarity)}55`
+                                }}>
+                                    {card.rarity || "Unknown Rarity"}
+                                </span>
                             </div>
-                        `).join('')}
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <h2 style={{ color: "#fff", fontSize: 24, fontWeight: 800, margin: "0 0 4px", fontFamily: "'Bebas Neue', cursive" }}>
+                                    {card.name}
+                                </h2>
+                                <p style={{ color: "rgba(255,255,255,0.4)", fontSize: 13, margin: "0 0 20px" }}>
+                                    #{card.localId} · {card.set?.name || "—"}
+                                </p>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {[
+                                        ["Type", Array.isArray(card.types) ? card.types.join(", ") : card.types],
+                                        ["Category", card.category],
+                                        ["HP", card.hp],
+                                        ["Illustrator", card.illustrator],
+                                        ["Evolves From", card.evolveFrom],
+                                        ["Regulation", card.regulationMark],
+                                        ["Set", card.set?.name],
+                                        ["Series", card.set?.serie?.name],
+                                    ].filter(([, v]) => v).map(([label, value]) => (
+                                        <div key={label} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                                            <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, minWidth: 90, fontWeight: 600, paddingTop: 1 }}>
+                                                {label.toUpperCase()}
+                                            </span>
+                                            <span style={{ color: "rgba(255,255,255,0.85)", fontSize: 13 }}>{String(value)}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                {card.attacks && card.attacks.length > 0 && (
+                                    <div style={{ marginTop: 16 }}>
+                                        <div style={{ color: "rgba(255,255,255,0.35)", fontSize: 12, fontWeight: 600, marginBottom: 8 }}>ATTACKS</div>
+                                        {card.attacks.map((atk, i) => (
+                                            <div key={i} style={{
+                                                background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "10px 12px",
+                                                marginBottom: 6, border: "1px solid rgba(255,255,255,0.08)"
+                                            }}>
+                                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                                                    <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>{atk.name}</span>
+                                                    {atk.damage && <span style={{ color: "#F97316", fontWeight: 800 }}>{atk.damage}</span>}
+                                                </div>
+                                                {atk.effect && <p style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, margin: 0 }}>{atk.effect}</p>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div style={{ padding: "16px 28px", borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", justifyContent: "flex-end" }}>
+                            <button
+                                onClick={onClose}
+                                style={{
+                                    padding: "8px 24px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.2)",
+                                    background: "transparent", color: "rgba(255,255,255,0.6)", cursor: "pointer",
+                                    fontSize: 14, fontWeight: 600, transition: "all 0.2s"
+                                }}
+                                onMouseOver={e => { e.target.style.background = "rgba(255,255,255,0.1)"; e.target.style.color = "#fff"; }}
+                                onMouseOut={e => { e.target.style.background = "transparent"; e.target.style.color = "rgba(255,255,255,0.6)"; }}
+                            >
+                                Close
+                            </button>
+                        </div>
                     </div>
                 </div>
-            `;
-
-            document.getElementById('pokemonResult').innerHTML = html;
+            );
         }
 
-        // Load popular Pokemon on page load
-        async function loadPopularPokemon() {
-            const popularIds = [25, 6, 94, 149, 700, 143, 133, 1, 4, 7, 150, 384];
-            const grid = document.getElementById('pokemonGrid');
+        function CardItem({ card, onClick, lang }) {
+            const [hovered, setHovered] = useState(false);
+            return (
+                <div
+                    onClick={() => onClick(card)}
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                    style={{
+                        background: hovered
+                            ? "rgba(255,255,255,0.08)"
+                            : "rgba(255,255,255,0.04)",
+                        borderRadius: 16,
+                        overflow: "hidden",
+                        border: `1px solid ${hovered ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.08)"}`,
+                        cursor: "pointer",
+                        transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+                        transform: hovered ? "translateY(-4px) scale(1.02)" : "translateY(0) scale(1)",
+                        boxShadow: hovered ? "0 16px 40px rgba(0,0,0,0.5)" : "0 2px 8px rgba(0,0,0,0.3)"
+                    }}
+                >
+                    <div style={{
+                        height: 200,
+                        background: "linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.07))",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        overflow: "hidden", position: "relative"
+                    }}>
+                        {card.image ? (
+                            <img
+                                src={`${card.image}/low.webp`}
+                                alt={card.name}
+                                style={{
+                                    maxHeight: "100%", maxWidth: "100%", objectFit: "contain",
+                                    transition: "transform 0.3s ease",
+                                    transform: hovered ? "scale(1.08)" : "scale(1)"
+                                }}
+                                onError={e => {
+                                    e.target.style.display = "none";
+                                    e.target.parentNode.innerHTML = '<div style="font-size:48px;opacity:0.3">🃏</div>';
+                                }}
+                            />
+                        ) : (
+                            <div style={{ fontSize: 48, opacity: 0.3 }}>🃏</div>
+                        )}
+                    </div>
+                    <div style={{ padding: "12px 14px 14px" }}>
+                        <div style={{ color: "#fff", fontWeight: 700, fontSize: 14, marginBottom: 4, fontFamily: "'Bebas Neue', cursive", letterSpacing: 0.5 }}>
+                            {card.name}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 11 }}>#{card.localId}</span>
+                            {card.rarity && (
+                                <span style={{
+                                    fontSize: 10, fontWeight: 700, letterSpacing: 0.5,
+                                    color: getRarityColor(card.rarity), opacity: 0.8
+                                }}>
+                                    {card.rarity}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
 
-            for (const id of popularIds) {
+        function PokemonTCGBrowser() {
+            const [lang, setLang] = useState("en");
+            const [sets, setSets] = useState([]);
+            const [selectedSet, setSelectedSet] = useState(null);
+            const [cards, setCards] = useState([]);
+            const [globalCards, setGlobalCards] = useState([]);
+            const [searchResults, setSearchResults] = useState([]);
+            const [selectedCard, setSelectedCard] = useState(null);
+            const [cardDetail, setCardDetail] = useState(null);
+            const [search, setSearch] = useState("");
+            const [loading, setLoading] = useState(false);
+            const [setsLoading, setSetsLoading] = useState(false);
+            const [error, setError] = useState(null);
+            const [view, setView] = useState("sets"); // "sets" | "cards" | "search"
+
+            // Fetch sets when language changes
+            useEffect(() => {
+                setSetsLoading(true);
+                setError(null);
+                setSets([]);
+                setGlobalCards([]);
+                setSelectedSet(null);
+                setCards([]);
+                setView("sets");
+
+                fetch(`${BASE_URL}/${lang}/sets`)
+                    .then(r => r.json())
+                    .then(data => {
+                        setSets(Array.isArray(data) ? data : []);
+                        setSetsLoading(false);
+                    })
+                    .catch(e => {
+                        setError("Failed to load sets. Please check your network connection.");
+                        setSetsLoading(false);
+                    });
+            }, [lang]);
+
+            // Fetch cards when a set is selected
+            const handleSetSelect = useCallback((set) => {
+                setSelectedSet(set);
+                setCards([]);
+                setSearch("");
+                setView("cards");
+                setLoading(true);
+                setError(null);
+
+                fetch(`${BASE_URL}/${lang}/sets/${set.id}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        setCards(Array.isArray(data.cards) ? data.cards : []);
+                        setLoading(false);
+                    })
+                    .catch(() => {
+                        setError("Failed to load cards for this set.");
+                        setLoading(false);
+                    });
+            }, [lang]);
+
+            // Global Search Function
+            const performGlobalSearch = useCallback(async (query) => {
+                if (!query || query.trim().length < 2) return;
+
+                setLoading(true);
+                setView("search");
+                setError(null);
+
                 try {
-                    const response = await fetch(`${POKEMON_API}/pokemon/${id}`);
-                    const data = await response.json();
+                    let cardsToFilter = globalCards;
 
-                    const card = document.createElement('div');
-                    card.className = 'grid-card';
-                    card.onclick = () => {
-                        document.getElementById('pokemonSearch').value = data.name;
-                        searchPokemon();
-                        window.scrollTo({ top: 300, behavior: 'smooth' });
-                    };
+                    // If global cards haven't been fetched yet, fetch them
+                    if (globalCards.length === 0) {
+                        const res = await fetch(`${BASE_URL}/${lang}/cards`);
+                        const data = await res.json();
+                        cardsToFilter = Array.isArray(data) ? data : [];
+                        setGlobalCards(cardsToFilter);
+                    }
 
-                    card.innerHTML = `
-                        <img src="${data.sprites.other['official-artwork'].front_default}" alt="${data.name}">
-                        <h3>${data.name}</h3>
-                    `;
+                    const filtered = cardsToFilter.filter(c =>
+                        c.name?.toLowerCase().includes(query.toLowerCase()) ||
+                        c.id?.toLowerCase().includes(query.toLowerCase())
+                    );
 
-                    grid.appendChild(card);
-                } catch (error) {
-                    console.error('Error loading pokemon:', error);
+                    setSearchResults(filtered);
+                    setLoading(false);
+                } catch (err) {
+                    setError("Failed to perform global search.");
+                    setLoading(false);
                 }
-            }
+            }, [lang, globalCards]);
+
+            // Fetch card detail when a card is clicked
+            const handleCardClick = useCallback(async (card) => {
+                setSelectedCard(card);
+                setCardDetail(null);
+                try {
+                    const res = await fetch(`${BASE_URL}/${lang}/cards/${card.id}`);
+                    const data = await res.json();
+                    setCardDetail(data);
+                } catch {
+                    setCardDetail(card); // fallback to list data
+                }
+            }, [lang]);
+
+            const filteredSets = sets.filter(s =>
+                s.name?.toLowerCase().includes(search.toLowerCase()) ||
+                s.id?.toLowerCase().includes(search.toLowerCase())
+            );
+
+            const displayedCards = view === "cards" ? cards.filter(c =>
+                c.name?.toLowerCase().includes(search.toLowerCase()) ||
+                c.localId?.toString().includes(search)
+            ) : searchResults;
+
+            return (
+                <>
+                    <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+                * { box-sizing: border-box; margin: 0; padding: 0; }
+                :root { color-scheme: dark; }
+                ::-webkit-scrollbar { width: 6px; }
+                ::-webkit-scrollbar-track { background: rgba(255,255,255,0.03); }
+                ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+                @keyframes pulse {
+                  0%, 100% { opacity: 1; }
+                  50% { opacity: 0.5; }
+                }
+                @keyframes modalIn {
+                  0% { transform: scale(0.85); opacity: 0; }
+                  100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes fadeSlideIn {
+                  0% { transform: translateY(20px); opacity: 0; }
+                  100% { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+                #tcg-main-container {
+                  padding-top: calc(var(--nav-height, 80px) + 20px);
+                  min-height: 100vh;
+                  background: #080c14;
+                  font-family: 'Outfit', sans-serif;
+                  color: #fff;
+                }
+              `}</style>
+
+                    <div id="tcg-main-container">
+
+                        {/* Header */}
+                        <header style={{
+                            background: "rgba(8,12,20,0.9)", backdropFilter: "blur(20px)",
+                            borderBottom: "1px solid rgba(255,255,255,0.07)",
+                            position: "sticky", top: "var(--nav-height, 80px)", zIndex: 100, padding: "0 24px"
+                        }}>
+                            <div style={{ maxWidth: 1280, margin: "0 auto", display: "flex", alignItems: "center", height: 64, gap: 20, flexWrap: "wrap" }}>
+                                {/* Logo Area */}
+                                <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                                    <div
+                                        onClick={() => { setView("sets"); setSearch(""); setSelectedSet(null); }}
+                                        style={{
+                                            width: 36, height: 36, borderRadius: 10,
+                                            background: "linear-gradient(135deg, #FFCB05, #F97316)",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            fontSize: 18, boxShadow: "0 0 16px rgba(255,203,5,0.4)", cursor: "pointer"
+                                        }}
+                                    >⚡</div>
+                                    <div style={{ cursor: "pointer" }} onClick={() => { setView("sets"); setSearch(""); setSelectedSet(null); }}>
+                                        <div style={{ fontFamily: "'Bebas Neue', cursive", fontSize: 22, letterSpacing: 2, lineHeight: 1.1 }}>
+                                            TCG<span style={{ color: "#FFCB05" }}>DEX</span>
+                                        </div>
+                                        <div style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", letterSpacing: 2, textTransform: "uppercase" }}>Card Browser</div>
+                                    </div>
+                                </div>
+
+                                {/* Breadcrumb */}
+                                {(view === "cards" || view === "search") && (
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, color: "rgba(255,255,255,0.4)", fontSize: 13 }}>
+                                        <button
+                                            onClick={() => { setView("sets"); setSearch(""); setSelectedSet(null); }}
+                                            style={{
+                                                background: "none", border: "none", color: "#FFCB05", cursor: "pointer",
+                                                fontSize: 13, fontWeight: 600, fontFamily: "'Outfit', sans-serif"
+                                            }}
+                                        >Sets</button>
+                                        <span>›</span>
+                                        <span style={{ color: "rgba(255,255,255,0.7)" }}>
+                                            {view === "cards" ? selectedSet?.name : "Global Search"}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <div style={{ flex: 1 }} />
+
+                                {/* Search */}
+                                <div style={{ position: "relative", flexShrink: 0 }}>
+                                    <span
+                                        onClick={() => performGlobalSearch(search)}
+                                        style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", opacity: 0.4, fontSize: 14, cursor: "pointer" }}
+                                    >🔍</span>
+                                    <input
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        onKeyDown={e => e.key === "Enter" && performGlobalSearch(search)}
+                                        placeholder="Search cards globally..."
+                                        style={{
+                                            background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",
+                                            borderRadius: 10, padding: "8px 14px 8px 34px",
+                                            color: "#fff", fontSize: 14, outline: "none", width: 220,
+                                            fontFamily: "'Outfit', sans-serif",
+                                            transition: "all 0.2s"
+                                        }}
+                                        onFocus={e => e.target.style.borderColor = "rgba(255,203,5,0.4)"}
+                                        onBlur={e => e.target.style.borderColor = "rgba(255,255,255,0.1)"}
+                                    />
+                                </div>
+
+                                {/* Language Switcher */}
+                                <div style={{ display: "flex", gap: 6, background: "rgba(255,255,255,0.05)", borderRadius: 12, padding: 4 }}>
+                                    {Object.entries(LANG_CONFIG).map(([code, cfg]) => (
+                                        <button
+                                            key={code}
+                                            onClick={() => setLang(code)}
+                                            style={{
+                                                padding: "6px 14px", borderRadius: 8, border: "none", cursor: "pointer",
+                                                fontFamily: "'Outfit', sans-serif", fontWeight: 700, fontSize: 13,
+                                                background: lang === code ? cfg.color : "transparent",
+                                                color: lang === code ? "#fff" : "rgba(255,255,255,0.4)",
+                                                transition: "all 0.2s",
+                                                boxShadow: lang === code ? `0 4px 12px ${cfg.color}55` : "none"
+                                            }}
+                                        >
+                                            {cfg.flag} {code.toUpperCase()}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </header>
+
+                        {/* Main */}
+                        <main style={{ maxWidth: 1280, margin: "0 auto", padding: "32px 24px" }}>
+
+                            {error && (
+                                <div style={{
+                                    background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)",
+                                    borderRadius: 12, padding: "16px 20px", marginBottom: 24, color: "#FCA5A5"
+                                }}>
+                                    ⚠️ {error}
+                                </div>
+                            )}
+
+                            {/* Sets View */}
+                            {view === "sets" && (
+                                <div style={{ animation: "fadeSlideIn 0.4s ease" }}>
+                                    <div style={{ marginBottom: 28 }}>
+                                        <h1 style={{ fontFamily: "'Bebas Neue', cursive", fontSize: 40, letterSpacing: 3, marginBottom: 6 }}>
+                                            Pokémon TCG <span style={{ color: "#FFCB05" }}>{lang === "en" ? "English" : "Japanese"}</span> Sets
+                                        </h1>
+                                        <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14 }}>
+                                            {setsLoading ? "Loading..." : `${filteredSets.length} sets available · Powered by TCGdex API`}
+                                        </p>
+                                    </div>
+
+                                    {setsLoading ? (
+                                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+                                            {Array(12).fill(0).map((_, i) => <CardSkeleton key={i} />)}
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 16 }}>
+                                            {filteredSets.map((set, i) => (
+                                                <SetCard key={set.id} set={set} onClick={handleSetSelect} index={i} />
+                                            ))}
+                                            {filteredSets.length === 0 && !setsLoading && (
+                                                <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 60, color: "rgba(255,255,255,0.2)" }}>
+                                                    <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+                                                    <div>No sets found for "{search}"</div>
+                                                    <button
+                                                        onClick={() => performGlobalSearch(search)}
+                                                        style={{
+                                                            marginTop: 16, background: "#FFCB05", color: "#000", border: "none",
+                                                            padding: "8px 20px", borderRadius: 8, fontWeight: 700, cursor: "pointer"
+                                                        }}
+                                                    >Search Cards Globally</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Cards/Search Results View */}
+                            {(view === "cards" || view === "search") && (
+                                <div style={{ animation: "fadeSlideIn 0.4s ease" }}>
+                                    <div style={{ marginBottom: 28, display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+                                        <div>
+                                            {view === "cards" && selectedSet?.logo && (
+                                                <img
+                                                    src={selectedSet.logo + ".webp"}
+                                                    alt={selectedSet.name}
+                                                    style={{ maxHeight: 60, marginBottom: 8, objectFit: "contain" }}
+                                                    onError={e => e.target.style.display = "none"}
+                                                />
+                                            )}
+                                            <h1 style={{ fontFamily: "'Bebas Neue', cursive", fontSize: 36, letterSpacing: 2, margin: 0 }}>
+                                                {view === "cards" ? selectedSet?.name : "Global Search Results"}
+                                            </h1>
+                                            <p style={{ color: "rgba(255,255,255,0.35)", fontSize: 14, marginTop: 4 }}>
+                                                {loading ? "Loading cards..." : `${displayedCards.length} cards found`}
+                                            </p>
+                                        </div>
+                                        {view === "cards" && selectedSet?.symbol && (
+                                            <img
+                                                src={selectedSet.symbol + ".webp"}
+                                                alt="symbol"
+                                                style={{ height: 40, opacity: 0.6 }}
+                                                onError={e => e.target.style.display = "none"}
+                                            />
+                                        )}
+                                    </div>
+
+                                    {loading ? (
+                                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
+                                            {Array(20).fill(0).map((_, i) => <CardSkeleton key={i} />)}
+                                        </div>
+                                    ) : (
+                                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 14 }}>
+                                            {displayedCards.map(card => (
+                                                <CardItem key={card.id} card={card} onClick={handleCardClick} lang={lang} />
+                                            ))}
+                                            {displayedCards.length === 0 && !loading && (
+                                                <div style={{ gridColumn: "1/-1", textAlign: "center", padding: 60, color: "rgba(255,255,255,0.2)" }}>
+                                                    <div style={{ fontSize: 48, marginBottom: 12 }}>🃏</div>
+                                                    <div>No cards found for "{search}"</div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </main>
+                    </div>
+
+                    {/* Card Modal */}
+                    {selectedCard && (
+                        <CardModal
+                            card={cardDetail || selectedCard}
+                            onClose={() => { setSelectedCard(null); setCardDetail(null); }}
+                            lang={lang}
+                        />
+                    )}
+                </>
+            );
         }
 
-        // Enter key support
-        document.addEventListener('DOMContentLoaded', () => {
-            const searchInput = document.getElementById('pokemonSearch');
-            searchInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    searchPokemon();
-                }
-            });
+        function SetCard({ set, onClick, index }) {
+            const [hovered, setHovered] = useState(false);
+            return (
+                <div
+                    onClick={() => onClick(set)}
+                    onMouseEnter={() => setHovered(true)}
+                    onMouseLeave={() => setHovered(false)}
+                    style={{
+                        background: hovered ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.03)",
+                        borderRadius: 16,
+                        border: `1px solid ${hovered ? "rgba(255,203,5,0.3)" : "rgba(255,255,255,0.07)"}`,
+                        cursor: "pointer",
+                        transition: "all 0.25s cubic-bezier(0.4,0,0.2,1)",
+                        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+                        boxShadow: hovered ? "0 12px 32px rgba(255,203,5,0.1)" : "none",
+                        overflow: "hidden",
+                        padding: 20,
+                        animation: `fadeSlideIn 0.4s ease ${Math.min(index * 0.02, 0.4)}s both`
+                    }}
+                >
+                    {set.logo ? (
+                        <div style={{ height: 64, display: "flex", alignItems: "center", marginBottom: 16 }}>
+                            <img
+                                src={set.logo + ".webp"}
+                                alt={set.name}
+                                style={{ maxHeight: 64, maxWidth: "100%", objectFit: "contain" }}
+                                onError={e => { e.target.style.display = "none"; }}
+                            />
+                        </div>
+                    ) : (
+                        <div style={{
+                            height: 64, display: "flex", alignItems: "center", marginBottom: 16,
+                            fontSize: 32
+                        }}>🃏</div>
+                    )}
 
-            loadPopularPokemon();
-        });
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ color: "#fff", fontWeight: 700, fontSize: 15, lineHeight: 1.3, marginBottom: 4, fontFamily: "'Bebas Neue', cursive", letterSpacing: 0.5 }}>
+                                {set.name}
+                            </div>
+                            <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, letterSpacing: 1 }}>{set.id?.toUpperCase()}</div>
+                        </div>
+                        {set.symbol && (
+                            <img
+                                src={set.symbol + ".webp"}
+                                alt="symbol"
+                                style={{ height: 24, opacity: 0.5, marginLeft: 8 }}
+                                onError={e => e.target.style.display = "none"}
+                            />
+                        )}
+                    </div>
+
+                    <div style={{ marginTop: 14, display: "flex", justifyContent: "flex-end" }}>
+                        <span style={{
+                            fontSize: 11, color: "rgba(255,203,5,0.6)", fontWeight: 700, letterSpacing: 1,
+                            opacity: hovered ? 1 : 0, transition: "opacity 0.2s"
+                        }}>
+                            VIEW CARDS →
+                        </span>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<PokemonTCGBrowser />);
     </script>
-
-    <!-- ✅ PKMON Payment System Scripts -->
     <script src="./ethers.min.js"></script>
-    <script src="assets/pkmon-onetime-payment.js"></script>
     <script src="assets/wallet.js"></script>
-    <script src="assets/payment-gate.js"></script>
 </body>
 
 </html>
