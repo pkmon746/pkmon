@@ -58,27 +58,36 @@ class WalletConnector {
         }
 
         if (!window.ethereum) {
-            console.log('[Wallet] MetaMask not installed');
+            console.log('[Wallet] MetaMask/Rabby not installed');
             return;
         }
 
         try {
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-            if (accounts.length > 0) {
-                this.currentAccount = accounts[0];
-                this.provider = this._makeProvider();
+            if (accounts.length === 0) return;
 
-                const network = await this.provider.getNetwork();
-                if (network.chainId !== this.chainId) {
-                    console.warn(`[Wallet] Wrong network: ${network.chainId}, switching to Sepolia...`);
+            this.currentAccount = accounts[0];
+
+            // 현재 체인 확인
+            const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+
+            if (currentChainId !== this.chainIdHex) {
+                console.warn(`[Wallet] Wrong chain (${currentChainId}), auto-switching to Sepolia...`);
+                try {
                     await this.switchToSepolia();
-                } else {
-                    console.log('[Wallet] ✅ Auto-connected:', this.currentAccount);
-                    this.updateUI();
-                    localStorage.setItem('pkmon_wallet_connected', 'true');
-                    sessionStorage.removeItem(this.LOGOUT_FLAG);
+                } catch (e) {
+                    // 사용자가 거절하거나 전환 실패 시에도 UI는 업데이트
+                    console.warn('[Wallet] Auto-switch failed:', e.message);
                 }
             }
+
+            // 전환 후 provider 새로 생성
+            this.provider = this._makeProvider();
+            console.log('[Wallet] ✅ Auto-connected:', this.currentAccount);
+            this.updateUI();
+            localStorage.setItem('pkmon_wallet_connected', 'true');
+            sessionStorage.removeItem(this.LOGOUT_FLAG);
+
         } catch (error) {
             console.error('[Wallet] checkConnection error:', error);
         }
@@ -86,9 +95,15 @@ class WalletConnector {
 
     async connectWallet() {
         if (!window.ethereum) {
-            alert('Please install MetaMask or another Web3 wallet');
+            alert('Please install MetaMask or Rabby Wallet first.\nhttps://metamask.io/download/');
             window.open('https://metamask.io/download/', '_blank');
             return;
+        }
+
+        const btn = document.getElementById('connectWalletBtn');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+            btn.disabled = true;
         }
 
         try {
@@ -97,11 +112,13 @@ class WalletConnector {
             });
 
             this.currentAccount = accounts[0];
-            this.provider = this._makeProvider();
-
             console.log('[Wallet] ✅ Connected:', this.currentAccount);
 
+            // Sepolia로 자동 전환
             await this.switchToSepolia();
+
+            // 전환 후 provider 생성
+            this.provider = this._makeProvider();
 
             this.updateUI();
             localStorage.setItem('pkmon_wallet_connected', 'true');
@@ -109,10 +126,16 @@ class WalletConnector {
 
         } catch (error) {
             console.error('[Wallet] connectWallet error:', error);
-            if (error.code === 4001) {
-                alert('Wallet connection rejected by user');
-            } else {
-                alert('Failed to connect wallet: ' + error.message);
+            // 사용자 거절은 조용히 처리
+            if (error.code !== 4001) {
+                console.error('[Wallet] Unexpected error:', error.message);
+            }
+            // UI 원상복구
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
+                btn.disabled = false;
+                btn.style.background = '';
+                btn.onclick = () => this.connectWallet();
             }
         }
     }
@@ -120,38 +143,56 @@ class WalletConnector {
     async switchToSepolia() {
         if (!window.ethereum) return;
 
+        const SEPOLIA_PARAMS = {
+            chainId: this.chainIdHex,          // '0xaa36a7'
+            chainName: 'Sepolia Testnet',
+            nativeCurrency: { name: 'Sepolia ETH', symbol: 'ETH', decimals: 18 },
+            rpcUrls: [
+                'https://rpc.sepolia.org',
+                'https://sepolia.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161',
+                'https://rpc2.sepolia.org'
+            ],
+            blockExplorerUrls: ['https://sepolia.etherscan.io']
+        };
+
+        // 현재 체인 확인 — 이미 Sepolia면 바로 리턴
+        try {
+            const currentChainId = await window.ethereum.request({ method: 'eth_chainId' });
+            if (currentChainId === this.chainIdHex) {
+                console.log('[Wallet] ✅ Already on Sepolia');
+                return;
+            }
+        } catch (_) {}
+
+        // Step 1: wallet_addEthereumChain 먼저 시도
+        // → Rabby / MetaMask 모두 체인이 이미 있으면 이 단계에서 switch까지 처리
+        // → 없으면 추가 후 switch
+        try {
+            await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [SEPOLIA_PARAMS],
+            });
+            console.log('[Wallet] ✅ Sepolia added/switched via addEthereumChain');
+            return;
+        } catch (addError) {
+            // 사용자가 거절(4001)한 경우
+            if (addError.code === 4001) {
+                console.warn('[Wallet] User rejected chain add');
+                throw addError;
+            }
+            console.warn('[Wallet] addEthereumChain failed, trying switchEthereumChain...', addError.message);
+        }
+
+        // Step 2: addEthereumChain이 안 되면 switchEthereumChain fallback
         try {
             await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
                 params: [{ chainId: this.chainIdHex }],
             });
-            console.log('[Wallet] ✅ Switched to Sepolia Testnet');
+            console.log('[Wallet] ✅ Switched to Sepolia via switchEthereumChain');
         } catch (switchError) {
-            if (switchError.code === 4902) {
-                try {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: this.chainIdHex,
-                            chainName: 'Sepolia Testnet',
-                            nativeCurrency: {
-                                name: 'Sepolia ETH',
-                                symbol: 'ETH',
-                                decimals: 18
-                            },
-                            rpcUrls: ['https://rpc.sepolia.org'],
-                            blockExplorerUrls: ['https://sepolia.etherscan.io']
-                        }],
-                    });
-                    console.log('[Wallet] ✅ Sepolia added and switched');
-                } catch (addError) {
-                    console.error('[Wallet] Failed to add Sepolia:', addError);
-                    throw addError;
-                }
-            } else {
-                console.error('[Wallet] Chain switch failed:', switchError);
-                throw switchError;
-            }
+            console.error('[Wallet] Both add and switch failed:', switchError);
+            throw switchError;
         }
     }
 
