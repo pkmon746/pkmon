@@ -1,15 +1,27 @@
 // Wallet Connection Handler - Sepolia Testnet
+// Fixed: ethers.js lazy-load guard so wallet works regardless of script order
 
 class WalletConnector {
     constructor() {
         this.currentAccount = null;
         this.provider = null;
         this.chainId = 11155111; // Sepolia Testnet
-        this.chainIdHex = '0xaa36a7'; // 11155111 in hex
+        this.chainIdHex = '0xaa36a7';
         this.LOGOUT_FLAG = 'pkmon_user_logged_out';
-        
-        console.log('[Wallet] 🔗 Sepolia Testnet 지갑 연결 초기화');
+
+        console.log('[Wallet] 🔗 Sepolia Testnet wallet init');
         this.init();
+    }
+
+    // ── ethers guard: ensure ethers is loaded before use ─────
+    _getEthers() {
+        if (typeof window.ethers !== 'undefined') return window.ethers;
+        if (typeof ethers !== 'undefined') return ethers;
+        throw new Error('ethers.js is not loaded. Make sure ethers.min.js is included before wallet.js');
+    }
+
+    _makeProvider() {
+        return new (this._getEthers()).providers.Web3Provider(window.ethereum);
     }
 
     init() {
@@ -18,16 +30,12 @@ class WalletConnector {
             connectBtn.addEventListener('click', () => this.connectWallet());
         }
 
-        // 로그아웃 모달 초기화
         this.initLogoutModal();
-
-        // 페이지 로드 시 자동 연결 시도
         this.checkConnection();
 
-        // 지갑 변경 이벤트 리스너
         if (window.ethereum) {
             window.ethereum.on('accountsChanged', (accounts) => {
-                console.log('[Wallet] 계정 변경됨:', accounts);
+                console.log('[Wallet] accounts changed:', accounts);
                 if (accounts.length === 0) {
                     this.handleDisconnect();
                 } else {
@@ -36,22 +44,21 @@ class WalletConnector {
                 }
             });
 
-            window.ethereum.on('chainChanged', (chainId) => {
-                console.log('[Wallet] 체인 변경됨:', chainId);
+            window.ethereum.on('chainChanged', () => {
+                console.log('[Wallet] chain changed, reloading...');
                 window.location.reload();
             });
         }
     }
 
     async checkConnection() {
-        // 로그아웃 플래그 확인
         if (sessionStorage.getItem(this.LOGOUT_FLAG) === 'true') {
-            console.log('[Wallet] 로그아웃 상태 - 자동 연결 건너뜀');
+            console.log('[Wallet] Logged out — skipping auto-connect');
             return;
         }
 
         if (!window.ethereum) {
-            console.log('[Wallet] MetaMask가 설치되지 않음');
+            console.log('[Wallet] MetaMask not installed');
             return;
         }
 
@@ -59,22 +66,21 @@ class WalletConnector {
             const accounts = await window.ethereum.request({ method: 'eth_accounts' });
             if (accounts.length > 0) {
                 this.currentAccount = accounts[0];
-                this.provider = new window.ethers.providers.Web3Provider(window.ethereum);
-                
-                // 체인 확인
+                this.provider = this._makeProvider();
+
                 const network = await this.provider.getNetwork();
                 if (network.chainId !== this.chainId) {
-                    console.warn(`[Wallet] Wrong network: ${network.chainId}, expected ${this.chainId}`);
+                    console.warn(`[Wallet] Wrong network: ${network.chainId}, switching to Sepolia...`);
                     await this.switchToSepolia();
                 } else {
-                    console.log('[Wallet] ✅ 지갑 자동 연결됨:', this.currentAccount);
+                    console.log('[Wallet] ✅ Auto-connected:', this.currentAccount);
                     this.updateUI();
                     localStorage.setItem('pkmon_wallet_connected', 'true');
                     sessionStorage.removeItem(this.LOGOUT_FLAG);
                 }
             }
         } catch (error) {
-            console.error('[Wallet] 연결 확인 실패:', error);
+            console.error('[Wallet] checkConnection error:', error);
         }
     }
 
@@ -86,26 +92,25 @@ class WalletConnector {
         }
 
         try {
-            const accounts = await window.ethereum.request({ 
-                method: 'eth_requestAccounts' 
+            const accounts = await window.ethereum.request({
+                method: 'eth_requestAccounts'
             });
-            
+
             this.currentAccount = accounts[0];
-            this.provider = new window.ethers.providers.Web3Provider(window.ethereum);
-            
-            console.log('[Wallet] ✅ 지갑 연결 성공:', this.currentAccount);
-            
-            // Sepolia 체인으로 전환
+            this.provider = this._makeProvider();
+
+            console.log('[Wallet] ✅ Connected:', this.currentAccount);
+
             await this.switchToSepolia();
-            
+
             this.updateUI();
             localStorage.setItem('pkmon_wallet_connected', 'true');
             sessionStorage.removeItem(this.LOGOUT_FLAG);
-            
+
         } catch (error) {
-            console.error('[Wallet] 연결 실패:', error);
+            console.error('[Wallet] connectWallet error:', error);
             if (error.code === 4001) {
-                alert('Wallet connection rejected');
+                alert('Wallet connection rejected by user');
             } else {
                 alert('Failed to connect wallet: ' + error.message);
             }
@@ -120,9 +125,8 @@ class WalletConnector {
                 method: 'wallet_switchEthereumChain',
                 params: [{ chainId: this.chainIdHex }],
             });
-            console.log('[Wallet] ✅ Sepolia Testnet으로 전환됨');
+            console.log('[Wallet] ✅ Switched to Sepolia Testnet');
         } catch (switchError) {
-            // 체인이 추가되지 않은 경우 (4902)
             if (switchError.code === 4902) {
                 try {
                     await window.ethereum.request({
@@ -139,13 +143,13 @@ class WalletConnector {
                             blockExplorerUrls: ['https://sepolia.etherscan.io']
                         }],
                     });
-                    console.log('[Wallet] ✅ Sepolia Testnet 추가됨');
+                    console.log('[Wallet] ✅ Sepolia added and switched');
                 } catch (addError) {
-                    console.error('[Wallet] Sepolia 추가 실패:', addError);
+                    console.error('[Wallet] Failed to add Sepolia:', addError);
                     throw addError;
                 }
             } else {
-                console.error('[Wallet] 체인 전환 실패:', switchError);
+                console.error('[Wallet] Chain switch failed:', switchError);
                 throw switchError;
             }
         }
@@ -157,8 +161,6 @@ class WalletConnector {
             const shortAddress = `${this.currentAccount.slice(0, 6)}...${this.currentAccount.slice(-4)}`;
             connectBtn.innerHTML = `<i class="fas fa-wallet"></i> ${shortAddress}`;
             connectBtn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
-            
-            // 클릭 시 로그아웃 모달 표시
             connectBtn.onclick = () => this.showLogoutModal();
         }
     }
@@ -168,26 +170,23 @@ class WalletConnector {
         this.provider = null;
         localStorage.removeItem('pkmon_wallet_connected');
         sessionStorage.setItem(this.LOGOUT_FLAG, 'true');
-        
+
         const connectBtn = document.getElementById('connectWalletBtn');
         if (connectBtn) {
             connectBtn.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
             connectBtn.style.background = '';
             connectBtn.onclick = () => this.connectWallet();
         }
-        
-        console.log('[Wallet] 연결 해제됨');
+
+        console.log('[Wallet] Disconnected');
     }
 
     showLogoutModal() {
         const modal = document.getElementById('logoutModal');
-        if (modal) {
-            modal.style.display = 'flex';
-        }
+        if (modal) modal.style.display = 'flex';
     }
 
     initLogoutModal() {
-        // 로그아웃 모달 HTML이 없으면 생성
         if (!document.getElementById('logoutModal')) {
             const modalHTML = `
                 <div id="logoutModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 10000; align-items: center; justify-content: center;">
@@ -205,46 +204,37 @@ class WalletConnector {
             document.body.insertAdjacentHTML('beforeend', modalHTML);
         }
 
-        // 이벤트 리스너
         const modal = document.getElementById('logoutModal');
         const cancelBtn = document.getElementById('cancelLogout');
         const confirmBtn = document.getElementById('confirmLogout');
 
         if (cancelBtn) {
-            cancelBtn.onclick = () => {
-                modal.style.display = 'none';
-            };
+            cancelBtn.onclick = () => { modal.style.display = 'none'; };
         }
 
         if (confirmBtn) {
             confirmBtn.onclick = () => {
                 modal.style.display = 'none';
                 this.handleDisconnect();
-                
-                // 현재 페이지가 보호된 페이지인 경우 홈으로 이동
                 const protectedPages = ['agent-dashboard.html', 'train.html'];
                 const currentPage = window.location.pathname.split('/').pop();
                 if (protectedPages.includes(currentPage)) {
                     window.location.href = 'index.html';
                 } else {
-                    // 그 외 페이지는 새로고침
                     window.location.reload();
                 }
             };
         }
 
-        // 모달 배경 클릭 시 닫기
         if (modal) {
             modal.onclick = (e) => {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                }
+                if (e.target === modal) modal.style.display = 'none';
             };
         }
     }
 }
 
-// 전역 인스턴스 생성
+// Global instance — safe to init here; ethers is only needed at call time, not at class-definition time
 window.addEventListener('DOMContentLoaded', () => {
     window.walletConnector = new WalletConnector();
 });
