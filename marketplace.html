@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <script>
+        function goToDashboard() {
+            if (typeof _runDashboardGate === 'function') {
+                _runDashboardGate();
+            } else {
+                setTimeout(goToDashboard, 100);
+            }
+        }
+    </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marketplace Hub - $PKMON</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* ===== Page Layout ===== */
+        .mp-page {
+            padding-top: var(--nav-height);
+            min-height: 100vh;
+        }
+
+        /* ===== Hero ===== */
+        .mp-hero {
+            text-align: center;
+            padding: 4rem 2rem 2.5rem;
+        }
+
+        .mp-hero-eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            border: 1px solid rgba(124,58,237,0.35);
+            background: rgba(124,58,237,0.12);
+            color: var(--light-purple);
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        .mp-hero h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(2.2rem, 5vw, 3.8rem);
+            font-weight: 900;
+            line-height: 1.1;
+            background: linear-gradient(135deg, #fff 0%, var(--light-purple) 55%, var(--accent-pink) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 1rem;
+        }
+
+        .mp-hero p {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            max-width: 520px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        /* ===== Grid ===== */
+        .mp-grid-wrap {
+            max-width: 1080px;
+            margin: 3rem auto 3rem;
+            padding: 0 2rem;
+        }
+
+        .mp-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+        }
+
+        /* ===== Tile ===== */
+        .mp-tile {
+            position: relative;
+            display: block;
+            aspect-ratio: 1 / 1;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.3s cubic-bezier(.22,.68,0,1.2),
+                        border-color 0.3s ease,
+                        box-shadow 0.3s ease;
+            opacity: 0;
+            animation: tileIn 0.5s ease forwards;
+        }
+
+        .mp-tile:nth-child(1) { animation-delay: 0.05s; }
+        .mp-tile:nth-child(2) { animation-delay: 0.10s; }
+        .mp-tile:nth-child(3) { animation-delay: 0.15s; }
+        .mp-tile:nth-child(4) { animation-delay: 0.20s; }
+        .mp-tile:nth-child(5) { animation-delay: 0.25s; }
+        .mp-tile:nth-child(6) { animation-delay: 0.30s; }
+        .mp-tile:nth-child(7) { animation-delay: 0.35s; }
+        .mp-tile:nth-child(8) { animation-delay: 0.40s; }
+        .mp-tile:nth-child(9) { animation-delay: 0.45s; }
+
+        @keyframes tileIn {
+            from { opacity: 0; transform: translateY(18px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .mp-tile:hover {
+            transform: translateY(-6px) scale(1.02);
+            border-color: rgba(168,85,247,0.6);
+            box-shadow: 0 24px 60px rgba(0,0,0,0.5), 0 0 40px rgba(124,58,237,0.2);
+        }
+
+        /* ===== Placeholder gradient ===== */
+        .mp-tile__placeholder {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+        }
+
+        .mp-tile__placeholder-icon {
+            font-size: 3.2rem;
+            filter: drop-shadow(0 4px 16px rgba(168,85,247,0.5));
+            animation: floatIcon 3s ease-in-out infinite;
+        }
+        .mp-tile:nth-child(2) .mp-tile__placeholder-icon { animation-delay: 0.3s; }
+        .mp-tile:nth-child(3) .mp-tile__placeholder-icon { animation-delay: 0.6s; }
+        .mp-tile:nth-child(4) .mp-tile__placeholder-icon { animation-delay: 0.9s; }
+        .mp-tile:nth-child(5) .mp-tile__placeholder-icon { animation-delay: 1.2s; }
+        .mp-tile:nth-child(6) .mp-tile__placeholder-icon { animation-delay: 1.5s; }
+        .mp-tile:nth-child(7) .mp-tile__placeholder-icon { animation-delay: 1.8s; }
+        .mp-tile:nth-child(8) .mp-tile__placeholder-icon { animation-delay: 2.1s; }
+        .mp-tile:nth-child(9) .mp-tile__placeholder-icon { animation-delay: 2.4s; }
+
+        @keyframes floatIcon {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-9px); }
+        }
+
+        .mp-tile__placeholder-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: rgba(255,255,255,0.28);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        /* ===== Image (uncomment when ready) ===== */
+        .mp-tile__img {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center;
+            transition: transform 0.4s ease, filter 0.3s ease;
+        }
+        .mp-tile:hover .mp-tile__img {
+            transform: scale(1.06);
+            filter: brightness(1.08);
+        }
+
+        /* ===== Dark gradient overlay ===== */
+        .mp-tile__overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to top,
+                rgba(6,6,9,0.90) 0%,
+                rgba(6,6,9,0.45) 38%,
+                transparent 65%
+            );
+        }
+
+        /* ===== Bottom info strip ===== */
+        .mp-tile__info {
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            padding: 1rem 1.1rem 1rem;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 0.5rem;
+        }
+
+        .mp-tile__name {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+            margin-bottom: 0.18rem;
+        }
+
+        .mp-tile__url {
+            font-size: 0.68rem;
+            color: rgba(255,255,255,0.38);
+        }
+
+        .mp-tile__arrow {
+            flex-shrink: 0;
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            background: rgba(168,85,247,0.2);
+            border: 1px solid rgba(168,85,247,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--light-purple);
+            font-size: 0.68rem;
+            transition: background 0.25s, transform 0.25s;
+        }
+        .mp-tile:hover .mp-tile__arrow {
+            background: var(--primary-purple);
+            border-color: var(--primary-purple);
+            transform: translate(2px, -2px);
+        }
+
+        /* ===== Number badge ===== */
+        .mp-tile__num {
+            position: absolute;
+            top: 0.85rem; left: 0.85rem;
+            width: 26px; height: 26px;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: rgba(255,255,255,0.45);
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* ===== Unique per-tile gradients ===== */
+        .tile-g1 { background: linear-gradient(145deg, #120720 0%, #3b1a6e 55%, #7C3AED 100%); }
+        .tile-g2 { background: linear-gradient(145deg, #071220 0%, #0d3a6e 55%, #2563EB 100%); }
+        .tile-g3 { background: linear-gradient(145deg, #071207 0%, #0d4a20 55%, #059669 100%); }
+        .tile-g4 { background: linear-gradient(145deg, #1f0720 0%, #6d0d78 55%, #c026d3 100%); }
+        .tile-g5 { background: linear-gradient(145deg, #1f0e07 0%, #7c3412 55%, #ea580c 100%); }
+        .tile-g6 { background: linear-gradient(145deg, #1f0714 0%, #831843 55%, #db2777 100%); }
+        .tile-g7 { background: linear-gradient(145deg, #071f1f 0%, #164e63 55%, #0891b2 100%); }
+        .tile-g8 { background: linear-gradient(145deg, #1a1507 0%, #78350f 55%, #d97706 100%); }
+        .tile-g9 { background: linear-gradient(145deg, #16071f 0%, #4c1d95 55%, #7c3aed 100%); }
+
+        /* ===== Note strip ===== */
+        .mp-note {
+            max-width: 1080px;
+            margin: 0 auto 5rem;
+            padding: 0 2rem;
+        }
+        .mp-note-inner {
+            padding: 1rem 1.4rem;
+            border-radius: 12px;
+            border: 1px dashed rgba(124,58,237,0.28);
+            background: rgba(124,58,237,0.05);
+            display: flex;
+            align-items: flex-start;
+            gap: 0.8rem;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            line-height: 1.65;
+        }
+        .mp-note-inner i { color: var(--light-purple); font-size: 1rem; flex-shrink: 0; margin-top: 0.1rem; }
+        .mp-note-inner strong { color: var(--light-purple); }
+        .mp-note-inner code { color: var(--accent-green); font-size: 0.78rem; }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 720px) {
+            .mp-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        }
+        @media (max-width: 420px) {
+            .mp-grid { gap: 0.75rem; }
+            .mp-tile__name { font-size: 0.85rem; }
+            .mp-tile__url  { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- ===== Navigation ===== -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.png" alt="PKMON Logo">
+                <span>PKMON</span>
+            </a>
+
+            <button class="nav-toggle" id="navToggle"
+                onclick="document.querySelector('.nav-menu').classList.toggle('open')">
+                <span></span><span></span><span></span>
+            </button>
+
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Pokédex <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="pokedex.html" class="dropdown-item">Pokédex</a>
+                        <a href="tcg-search.html" class="dropdown-item">Poké TCG</a>
+                        <a href="pokememe.html" class="dropdown-item">PokéMeme</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="train.html" class="nav-link">Train</a>
+                </li>
+                <li class="nav-item">
+                    <a href="battle.html" class="nav-link">Battle</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link active">
+                        $PKMON <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="marketplace.html" class="dropdown-item">Linked site</a>
+                        <a href="utility.html" class="dropdown-item">Utility</a>
+                        <a href="#" class="dropdown-item" style="opacity:0.6;cursor:not-allowed;">
+                            Coming soon <span style="font-size:0.6rem;vertical-align:middle;">⏳</span>
+                        </a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">
+                        Poké Center <i class="fas fa-chevron-down" style="font-size:0.7rem;"></i>
+                    </a>
+                    <div class="dropdown-menu">
+                        <a href="https://x.com/pkmon" target="_blank" class="dropdown-item">X (Twitter)</a>
+                        <a href="https://t.me/pkmon" target="_blank" class="dropdown-item">Telegram</a>
+                    </div>
+                </li>
+                <li class="nav-item">
+                    <a href="javascript:void(0);" onclick="goToDashboard()" class="nav-link btn-start">START</a>
+                </li>
+                <li class="nav-item">
+                    <button class="btn-wallet" id="connectWalletBtn">
+                        <i class="fas fa-wallet"></i> Connect Wallet
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- ===== Page ===== -->
+    <div class="mp-page">
+
+        <div class="mp-hero">
+            <div class="mp-hero-eyebrow">
+                <i class="fas fa-store"></i> PKMON Ecosystem
+            </div>
+            <h1>Marketplace Hub</h1>
+            <p>PKMON과 연결된 9개의 크립토 마켓플레이스를 한눈에 확인하고 바로 이동하세요.</p>
+        </div>
+
+        <div class="mp-grid-wrap">
+            <div class="mp-grid">
+
+                <!-- ── 01 Renaiss ──────────────────────────────────── -->
+                <a class="mp-tile tile-g1"
+                   href="https://www.renaiss.xyz/marketplace"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">01</span>
+                    <!--
+                        이미지 준비되면 아래 주석 해제 후 src 교체
+                        권장: 600×600 px  |  파일명: mp-01-renaiss.jpg
+                    -->
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-01-renaiss.jpg" alt="Renaiss"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">🌐</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">Renaiss</div>
+                            <div class="mp-tile__url">renaiss.xyz/marketplace</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 02 Courtyard ───────────────────────────────── -->
+                <a class="mp-tile tile-g2"
+                   href="https://courtyard.io/marketplace"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">02</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-02-courtyard.jpg" alt="Courtyard"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">🏛️</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">Courtyard</div>
+                            <div class="mp-tile__url">courtyard.io/marketplace</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 03 CollectorCrypt ───────────────────────────── -->
+                <a class="mp-tile tile-g3"
+                   href="https://collectorcrypt.com/marketplace/cards"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">03</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-03-collector.jpg" alt="CollectorCrypt"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">🃏</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">CollectorCrypt</div>
+                            <div class="mp-tile__url">collectorcrypt.com/marketplace</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 04 Magic Eden ───────────────────────────────── -->
+                <a class="mp-tile tile-g4"
+                   href="https://magiceden.io/packs"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">04</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-04-magiceden.jpg" alt="Magic Eden"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">✨</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">Magic Eden</div>
+                            <div class="mp-tile__url">magiceden.io/packs</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 05 Beezie ───────────────────────────────────── -->
+                <a class="mp-tile tile-g5"
+                   href="https://beezie.com/marketplace"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">05</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-05-beezie.jpg" alt="Beezie"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">🐝</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">Beezie</div>
+                            <div class="mp-tile__url">beezie.com/marketplace</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 06 rip.fun ──────────────────────────────────── -->
+                <a class="mp-tile tile-g6"
+                   href="https://rip.fun/marketplace/products"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">06</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-06-ripfun.jpg" alt="rip.fun"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">💀</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">rip.fun</div>
+                            <div class="mp-tile__url">rip.fun/marketplace/products</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 07 Playkami ─────────────────────────────────── -->
+                <a class="mp-tile tile-g7"
+                   href="https://playkami.io/marketplace"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">07</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-07-playkami.jpg" alt="Playkami"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">🎴</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">Playkami</div>
+                            <div class="mp-tile__url">playkami.io/marketplace</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 08 Phygitals ───────────────────────────────── -->
+                <a class="mp-tile tile-g8"
+                   href="https://www.phygitals.com/marketplace"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">08</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-08-phygitals.jpg" alt="Phygitals"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">🔮</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">Phygitals</div>
+                            <div class="mp-tile__url">phygitals.com/marketplace</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+                <!-- ── 09 SuperSuperRare ───────────────────────────── -->
+                <a class="mp-tile tile-g9"
+                   href="https://dev.supersuperrare.com/"
+                   target="_blank" rel="noopener">
+                    <span class="mp-tile__num">09</span>
+                    <!-- <img class="mp-tile__img" src="assets/marketplace/mp-09-supersuperrare.jpg" alt="SuperSuperRare"> -->
+                    <div class="mp-tile__placeholder">
+                        <span class="mp-tile__placeholder-icon">💎</span>
+                        <span class="mp-tile__placeholder-label">Image coming soon</span>
+                    </div>
+                    <div class="mp-tile__overlay"></div>
+                    <div class="mp-tile__info">
+                        <div>
+                            <div class="mp-tile__name">SuperSuperRare</div>
+                            <div class="mp-tile__url">supersuperrare.com</div>
+                        </div>
+                        <div class="mp-tile__arrow"><i class="fas fa-arrow-up-right-from-square"></i></div>
+                    </div>
+                </a>
+
+            </div><!-- /.mp-grid -->
+        </div><!-- /.mp-grid-wrap -->
+
+        <!-- 이미지 교체 안내 -->
+        <div class="mp-note">
+            <div class="mp-note-inner">
+                <i class="fas fa-image"></i>
+                <span>
+                    이미지를 추가하려면 <strong>assets/marketplace/</strong> 폴더를 만들고
+                    <strong>mp-01-renaiss.jpg</strong> ~ <strong>mp-09-supersuperrare.jpg</strong>
+                    파일을 <strong>600×600 px</strong> 로 저장한 뒤,
+                    각 타일의 <code>&lt;!-- &lt;img&gt; --&gt;</code> 주석을 해제하세요.
+                    이미지가 없으면 그라디언트 배경이 자동으로 표시됩니다.
+                </span>
+            </div>
+        </div>
+
+    </div><!-- /.mp-page -->
+
+    <script src="./ethers.min.js"></script>
+    <script src="assets/pkmon-onetime-payment.js"></script>
+    <script src="assets/wallet.js"></script>
+    <script src="assets/payment-gate.js"></script>
+</body>
+</html>
