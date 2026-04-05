@@ -1,3 +1,10 @@
+// ethers.js guard helper
+function _getEthers() {
+    if (typeof window.ethers !== 'undefined') return window.ethers;
+    if (typeof ethers !== 'undefined') return ethers;
+    throw new Error('ethers.js is not loaded. Include ethers.min.js before battle.js');
+}
+
 // Battle Engine & Betting System using PokeAPI
 import { TRAINERS } from './trainers.js';
 import CONFIG from './config.js';
@@ -442,7 +449,7 @@ class BattleEngine {
         const payout = betAmount * 2;
         try {
             if (window.walletConnector) await window.walletConnector.switchToSepolia();
-            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const provider = new (_getEthers()).providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
             const userAddress = await signer.getAddress();
 
@@ -503,11 +510,11 @@ class BattleEngine {
         try {
             if (window.walletConnector) await window.walletConnector.switchToSepolia();
 
-            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const provider = new (_getEthers()).providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
-            const contract = new window.ethers.Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
+            const contract = new (_getEthers()).Contract(TOKEN_ADDRESS, ERC20_ABI, signer);
             const decimals = await contract.decimals();
-            const amountWei = window.ethers.utils.parseUnits(parsedAmount.toString(), decimals);
+            const amountWei = _getEthers().utils.parseUnits(parsedAmount.toString(), decimals);
 
             const tx = await contract.transfer(BET_RECEIVER, amountWei);
             this.log(`⏳ Sending ${parsedAmount} RLO... TX: ${tx.hash.slice(0, 10)}...`);
