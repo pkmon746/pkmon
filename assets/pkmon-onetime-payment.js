@@ -49,6 +49,15 @@ class RLOOneTimePayment {
     }
 
     // ─────────────────────────────────────────
+    // ethers.js 로드 가드 (window.ethers가 없을 때 안전하게 에러 처리)
+    // ─────────────────────────────────────────
+    _getEthers() {
+        if (typeof window.ethers !== 'undefined') return window.ethers;
+        if (typeof ethers !== 'undefined') return ethers;
+        throw new Error('ethers.js is not loaded. Make sure ethers.min.js is included before payment scripts.');
+    }
+
+    // ─────────────────────────────────────────
     // 숫자 포맷 함수 (1000 단위 콤마)
     // ─────────────────────────────────────────
     formatNumber(num) {
@@ -217,9 +226,9 @@ class RLOOneTimePayment {
        try {
            // ✅ 사용자의 지갑 설정과 상관없이 모나드 네트워크에서 직접 잔액 조회
            const rpcUrl = 'https://rpc.sepolia.org'; // Sepolia 테스트넷 RPC
-           const provider = new window.ethers.providers.JsonRpcProvider(rpcUrl);
+           const provider = new (this._getEthers()).providers.JsonRpcProvider(rpcUrl);
 
-           const contract = new window.ethers.Contract(
+           const contract = new (this._getEthers()).Contract(
                this.tokenAddress,
                this.erc20ABI,
                provider 
@@ -235,7 +244,7 @@ class RLOOneTimePayment {
            const decimals = await contract.decimals();
            const balance = await contract.balanceOf(userAddress);
 
-           return window.ethers.utils.formatUnits(balance, decimals);
+           return this._getEthers().utils.formatUnits(balance, decimals);
        } catch (error) {
            console.error('[Payment] 잔액 확인 오류:', error);
            return '0';
@@ -252,17 +261,17 @@ class RLOOneTimePayment {
                 await window.walletConnector.switchToSepolia();
             }
 
-            const provider = new window.ethers.providers.Web3Provider(window.ethereum);
+            const provider = new (this._getEthers()).providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
             // ... (이하 동일)
-            const contract = new window.ethers.Contract(
+            const contract = new (this._getEthers()).Contract(
                 this.tokenAddress,
                 this.erc20ABI,
                 signer
             );
 
             const decimals = await contract.decimals();
-            const amount = window.ethers.utils.parseUnits(this.paymentAmount.toString(), decimals);
+            const amount = this._getEthers().utils.parseUnits(this.paymentAmount.toString(), decimals);
 
             console.log(`[Payment] 결제 진행: ${this.paymentAmount} RLO → ${this.receiverAddress}`);
 
@@ -535,10 +544,9 @@ class RLOOneTimePayment {
 // 페이지 로드 시 자동 실행
 // ─────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', async () => {
-    // Ethers.js 로드 확인
-    if (typeof window.ethers === 'undefined') {
-        console.error('[RLO] Ethers.js가 로드되지 않았습니다');
-        return;
+    // Ethers.js 로드 확인 (경고만 — 실제 사용 시점에 _getEthers()가 다시 체크)
+    if (typeof window.ethers === 'undefined' && typeof ethers === 'undefined') {
+        console.warn('[RLO] ethers.js가 아직 로드되지 않았습니다. ethers.min.js 포함 여부를 확인하세요.');
     }
 
     const paymentSystem = new RLOOneTimePayment();
