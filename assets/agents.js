@@ -42,7 +42,7 @@ class AgentSystem {
         this.addChatMessage('System', 'Starting arbitrage analysis...', 25);
 
         // Check if this is a hardcoded demo cert
-        if (certNumber === '70356913' || certNumber === '97271415') {
+        if (certNumber === '70356913' || certNumber === '97271415' || certNumber === '42942741') {
             await this.runHardcodedDemo(certNumber);
             return;
         }
@@ -773,6 +773,40 @@ class AgentSystem {
             };
             this.updateGengarCard(this.currentData.gengar);
             this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$436 profit (18.7% margin)', 94);
+            this.showPikachuReaction('profit');
+        
+        } else if (certNumber === '42942741') {
+            // Demo data for cert 42942741
+            this.addChatMessage('Charizard', 'Searching PriceCharting API for market pricing...', 6);
+            await this.delay(800);
+
+            this.currentData.charizard = {
+                fmv: 11500,
+                recentSales: [
+                    { date: '2026-04-10', price: 11500 },
+                    { date: '2026-04-09', price: 12108 },
+                    { date: '2026-04-08', price: 9500 }
+                ],
+                avgPrice: 11500,
+                dataSource: 'PriceCharting API'
+            };
+            this.updateCharizardCard(this.currentData.charizard);
+            this.addChatMessage('Charizard', 'Found FMV: $11,500', 6);
+            await this.delay(1000);
+
+            this.addChatMessage('Gengar', 'Scanning SNKRDUNK for PSA10 listings...', 94);
+            await this.delay(800);
+
+            this.currentData.gengar = {
+                latestSalePrice: 9600,
+                cheapestListing: 9477,
+                arbitrageOpportunity: 1900,
+                profitMargin: '19.8',
+                listingsFound: 1,
+                dataSource: 'snkrdunk.com'
+            };
+            this.updateGengarCard(this.currentData.gengar);
+            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$1,900 profit (19.8% margin)', 94);
             this.showPikachuReaction('profit');
         }
 
