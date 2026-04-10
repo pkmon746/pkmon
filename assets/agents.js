@@ -42,7 +42,7 @@ class AgentSystem {
         this.addChatMessage('System', 'Starting arbitrage analysis...', 25);
 
         // Check if this is a hardcoded demo cert
-        if (certNumber === '70356913' || certNumber === '97271415' || certNumber === '42942741') {
+        if (certNumber === '70356913' || certNumber === '97271415' || certNumber === '42942741' || certNumber === '103585434' || certNumber === '103966172') {
             await this.runHardcodedDemo(certNumber);
             return;
         }
@@ -703,9 +703,44 @@ class AgentSystem {
 
     // Hardcoded demo for specific cert numbers
     async runHardcodedDemo(certNumber) {
-        // Always run Sylveon for the cert lookup first
-        await this.sylveonAgent(certNumber);
-        await this.delay(1000);
+        // Hardcoded Sylveon data for cert 42942741
+        if (certNumber === '42942741') {
+            this.addChatMessage('Sylveon', 'Fetching PSA data for CERT ' + certNumber + '...', 700);
+            await this.delay(800);
+            this.currentData.sylveon = {
+                certNumber: '42942741',
+                cardName: 'MARIO PIKACHU-HOLO',
+                series: 'POKEMON JAPANESE XY PROMO',
+                cardNumber: '293',
+                grade: 'PSA GEM MT 10',
+                population: '2265',
+                year: '2016'
+            };
+            this.updateSylveonCard(this.currentData.sylveon);
+            this.addChatMessage('Sylveon', '✅ Found: MARIO PIKACHU-HOLO - Grade PSA GEM MT 10 (Pop: 2265) [2016]', 700);
+            await this.delay(1000);
+
+        } else if (certNumber === '103585434' || certNumber === '103966172') {
+            this.addChatMessage('Sylveon', 'Fetching PSA data for CERT ' + certNumber + '...', 700);
+            await this.delay(800);
+            this.currentData.sylveon = {
+                certNumber: certNumber,
+                cardName: 'CHARIZARD ex',
+                series: 'POKEMON JAPANESE SV2a-POKEMON 151',
+                cardNumber: '201',
+                grade: 'PSA GEM MT 10',
+                population: '34484',
+                year: '2023'
+            };
+            this.updateSylveonCard(this.currentData.sylveon);
+            this.addChatMessage('Sylveon', '✅ Found: CHARIZARD ex - Grade PSA GEM MT 10 (Pop: 34484) [2023]', 700);
+            await this.delay(1000);
+
+        } else {
+            // Always run Sylveon for the cert lookup first
+            await this.sylveonAgent(certNumber);
+            await this.delay(1000);
+        }
 
         if (certNumber === '70356913') {
             // Demo data for cert 70356913
@@ -807,6 +842,40 @@ class AgentSystem {
             };
             this.updateGengarCard(this.currentData.gengar);
             this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$1,900 profit (19.8% margin)', 94);
+            this.showPikachuReaction('profit');
+
+        } else if (certNumber === '103585434' || certNumber === '103966172') {
+            // Demo data for cert 103585434 / 103966172
+            this.addChatMessage('Charizard', 'Searching PriceCharting API for market pricing...', 6);
+            await this.delay(800);
+
+            this.currentData.charizard = {
+                fmv: 807.5,
+                recentSales: [
+                    { date: '2026-04-10', price: 902.8 },
+                    { date: '2026-04-09', price: 850 },
+                    { date: '2026-04-08', price: 800 }
+                ],
+                avgPrice: 807.5,
+                dataSource: 'PriceCharting API'
+            };
+            this.updateCharizardCard(this.currentData.charizard);
+            this.addChatMessage('Charizard', 'Found FMV: $807.5', 6);
+            await this.delay(1000);
+
+            this.addChatMessage('Gengar', 'Scanning SNKRDUNK for PSA10 listings...', 94);
+            await this.delay(800);
+
+            this.currentData.gengar = {
+                latestSalePrice: 881,
+                cheapestListing: 954,
+                arbitrageOpportunity: 146.5,
+                profitMargin: '18.14',
+                listingsFound: 1,
+                dataSource: 'snkrdunk.com'
+            };
+            this.updateGengarCard(this.currentData.gengar);
+            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$146.5 profit (18.14% margin)', 94);
             this.showPikachuReaction('profit');
         }
 
