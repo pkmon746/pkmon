@@ -522,7 +522,7 @@ class AgentSystem {
             </div>
             <div class="data-item">
                 <div class="data-label">Grade</div>
-                <div class="data-value">PSA ${data.grade}</div>
+                <div class="data-value">${data.grade}</div>
             </div>
             <div class="data-item">
                 <div class="data-label">Population</div>
