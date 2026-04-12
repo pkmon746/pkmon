@@ -834,7 +834,7 @@ class AgentSystem {
 
             this.currentData.gengar = {
                 latestSalePrice: 9600,
-                cheapestListing: 9477,
+                cheapestListing: 9600,
                 arbitrageOpportunity: 1900,
                 profitMargin: '19.8',
                 listingsFound: 1,
