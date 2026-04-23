@@ -816,17 +816,17 @@ class AgentSystem {
             await this.delay(800);
 
             this.currentData.charizard = {
-                fmv: 11500,
+                fmv: 9269,
                 recentSales: [
-                    { date: '2026-04-10', price: 11500 },
-                    { date: '2026-04-09', price: 12108 },
-                    { date: '2026-04-08', price: 9500 }
+                    { date: '2026-04-19', price: 8900 },
+                    { date: '2026-04-18', price: 10000 },
+                    { date: '2026-04-18', price: 10490 }
                 ],
-                avgPrice: 11500,
+                avgPrice: 9269,
                 dataSource: 'PriceCharting API'
             };
             this.updateCharizardCard(this.currentData.charizard);
-            this.addChatMessage('Charizard', 'Found FMV: $11,500', 6);
+            this.addChatMessage('Charizard', 'Found FMV: $9,269', 6);
             await this.delay(1000);
 
             this.addChatMessage('Gengar', 'Scanning SNKRDUNK for PSA10 listings...', 94);
@@ -835,13 +835,13 @@ class AgentSystem {
             this.currentData.gengar = {
                 latestSalePrice: 9600,
                 cheapestListing: 9600,
-                arbitrageOpportunity: 1900,
-                profitMargin: '19.8',
+                arbitrageOpportunity: 331,
+                profitMargin: '3.6',
                 listingsFound: 1,
                 dataSource: 'snkrdunk.com'
             };
             this.updateGengarCard(this.currentData.gengar);
-            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +$1,900 profit (19.8% margin)', 94);
+            this.addChatMessage('Gengar', '✅ Arbitrage opportunity found! +331 profit (3.6% margin)', 94);
             this.showPikachuReaction('profit');
 
         } else if (certNumber === '103585434' || certNumber === '103966172') {
